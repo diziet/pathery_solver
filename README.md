@@ -13,8 +13,9 @@
 
 This project is an extension to the Pathery website (www.pathery.com).  It does two main things:
 
-1. Extend the client (browser) to do things like show block values and save/load of solutions.
-2. Lets the website interact with a personal server (running a solver), to facilitate human-computer interaction.
+1. Based off of https://github.com/WuTheFWasThat/midnighttherapy
+2. Extend the client (browser) to do things like show block values and save/load of solutions.
+3. Lets the website interact with a personal server (running a solver), to facilitate human-computer interaction.
 
 
 ### HOTKEY ###
