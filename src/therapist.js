@@ -416,7 +416,7 @@ function draw_single_value(mapid, i, j, value, blocking, maxValue) {
       css.color = 'gray';
     }
     elt.css(css);
-    elt.text(i + ',' + j);
+    elt.text(value);
 }
 
 function refresh_all() {

@@ -25,8 +25,8 @@ app.post('/place_greedy', middleware, function(req, res){
   console.log("\nPLACE GREEDY:")
   var t = new Date().getTime();
   remaining = JSON.parse(req.param('remaining'));
-  if (remaining > 7 ) {
-    remaining = 7
+  if (remaining > 3 ) {
+    remaining = 3
   }
   console.log("REMAINING: " + remaining)
   var result = Analyst.place_greedy(JSON.parse(req.param('board')), JSON.parse(req.param('solution')), remaining);
