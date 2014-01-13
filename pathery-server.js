@@ -70,14 +70,14 @@ app.post('/compute_value', middleware, function(req, res){
 });
 
 app.post('/compute_values', middleware, function(req, res){
-  console.log("\nCOMPUTE VALUES:")
+  //console.log("\nCOMPUTE VALUES:")
   var t = new Date().getTime();
   var result = Analyst.compute_values(JSON.parse(req.param('board')), JSON.parse(req.param('solution')));
   var time_elapsed = new Date().getTime() - t;
 
-  console.log("ms elapsed: " , time_elapsed);
-  console.log("find_pathery_path count: " + result.find_pathery_path_count);
-  console.log("ms / #find_pathery_path: " , time_elapsed / result.find_pathery_path_count)
+  //console.log("ms elapsed: " , time_elapsed);
+  //console.log("find_pathery_path count: " + result.find_pathery_path_count);
+  //console.log("ms / #find_pathery_path: " , time_elapsed / result.find_pathery_path_count)
 
   res.json(result);
 });

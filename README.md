@@ -32,14 +32,14 @@ First you'll need a server running.
 1. Clone this repo and cd into it
 2. Run locally:
 
-`node pathery-server.js` (or just `npm start`, if you have npm)
+`npm install express` `node pathery-server.js` (or just `npm start`, if you have npm)
 
 Next, add my client to the browser window.
 
 1. Go to Pathery
 2. Paste
 
-`$.getScript('https://github.com/makeshifthoop/pathery_solver/blob/master/pathery-client.js')`
+`$.getScript('https://raw.github.com/WuTheFWasThat/midnighttherapy/master/pathery-client.js')`
 
 into the Javascript console.
 
@@ -51,4 +51,6 @@ into the Javascript console.
 
 Like {"[0,1]": 1, "[0,1],[0,2]": 1...}
 
+CREDIT:  
 
+Big thanks to BlueRaja, HRoll, Joy, skishore, wuthefwasthat for making this possible.

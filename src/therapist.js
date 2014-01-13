@@ -1235,10 +1235,10 @@ function initialize_toolbar() {
     button_toolbar.append(change_rock_input).append(change_rock_button).append($('<br/>'));
   }
 
-  //var chat_iframe = $('<iframe>').attr('src', 'http://www.pathery.com/chat').css({
-  //  'width':'100%','height':'400px', 'margin-top':'20px'
-  //})
-  //button_toolbar.append(chat_iframe);
+  var chat_iframe = $('<iframe>').attr('src', 'http://www.pathery.com/chat').css({
+    'width':'100%','height':'400px', 'margin-top':'20px'
+  })
+  button_toolbar.append(chat_iframe);
 
   if (!is_ugli) {
     //button_toolbar.append($('<div>').text('Chat').css({'text-align':'center', 'background-color':'black', 'width':'100%', 'margin-top':'20px'}))
