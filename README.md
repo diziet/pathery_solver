@@ -30,10 +30,12 @@ This project is an extension to the Pathery website (www.pathery.com).  It does 
 
 First you'll need a server running.  
 
-1. Clone this repo and cd into it
-2. Run locally:
+1. Clone this repo and cd into it (<a href="http://git-scm.com/book/en/Getting-Started-Installing-Git">How to install git</a>)
+2. Install Node (<a href="http://howtonode.org/how-to-install-nodejs">How to</a>)
+3. `npm install express`
+4. Run locally:
 
-`npm install express` `node pathery-server.js` (or just `npm start`, if you have npm)
+(or just `npm start`, if you have npm)
 
 Next, add my client to the browser window.
 
