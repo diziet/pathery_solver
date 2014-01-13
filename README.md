@@ -44,6 +44,10 @@ Next, add the client to the browser window.
 
 into the Javascript console.
 
+
+### TUNING ###
+Edit DEPTH_CONSTANT in pathery_server.js to change how many blocks the solver places.  Right now on a 2013 Macbook Pro it can do ~8 block in simple ~10s.
+
 ## FUTURE WORK: ##
 
 - Partial-Path caching
