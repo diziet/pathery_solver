@@ -33,11 +33,9 @@ First you'll need a server running.
 1. Clone this repo and cd into it (<a href="http://git-scm.com/book/en/Getting-Started-Installing-Git">How to install git</a>)
 2. Install Node (<a href="http://howtonode.org/how-to-install-nodejs">How to</a>)
 3. `npm install express`
-4. Run locally:
+4. Run locally: (or just `npm start`, if you have npm)
 
-(or just `npm start`, if you have npm)
-
-Next, add my client to the browser window.
+Next, add the client to the browser window.
 
 1. Go to Pathery
 2. Paste
