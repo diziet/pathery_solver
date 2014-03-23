@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////
 // SERVER ONLY
 /////////////////////////////////////////////////////
-
+DEPTH_CONSTANT = 3
 var express = require('express');
 var Analyst = require('./src/analyst.js');
 
@@ -25,8 +25,8 @@ app.post('/place_greedy', middleware, function(req, res){
   console.log("\nPLACE GREEDY:")
   var t = new Date().getTime();
   remaining = JSON.parse(req.param('remaining'));
-  if (remaining > 3 ) {
-    remaining = 3
+  if (remaining > DEPTH_CONSTANT  ) {
+    remaining = DEPTH_CONSTANT
   }
   console.log("REMAINING: " + remaining)
   var result = Analyst.place_greedy(JSON.parse(req.param('board')), JSON.parse(req.param('solution')), remaining);
