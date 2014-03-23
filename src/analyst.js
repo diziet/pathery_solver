@@ -6,6 +6,7 @@
 
 (function(exports) {
 
+RWC = require('random-weighted-choice');
 ROCK_1             = 'r';
 ROCK_2             = 'R';  // never used?
 ROCK_3             = 'q';  // used in seeing double, same as rock?
