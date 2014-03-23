@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////
 // SERVER ONLY
 /////////////////////////////////////////////////////
-DEPTH_CONSTANT = 3
+DEPTH_CONSTANT = 2
 var express = require('express');
 var Analyst = require('./src/analyst.js');
 
@@ -29,7 +29,6 @@ app.post('/place_greedy', middleware, function(req, res){
     remaining = DEPTH_CONSTANT
   }
   console.log("REMAINING: " + remaining)
-  var result = Analyst.place_greedy(JSON.parse(req.param('board')), JSON.parse(req.param('solution')), remaining);
 
   board = JSON.parse(req.param('board'))
   graph = new Analyst.PatheryGraph(board)
@@ -47,7 +46,6 @@ app.post('/place_greedy', middleware, function(req, res){
   console.log("ms elapsed: " , new Date().getTime() - t)
   console.log("FINAL RESULT:" + result[0])
   console.log("FINAL RESULT SCORE:" + result[1])
-  res.json(result[0]);
   best_blocks = result[0]
   unkeyed_blocks = []
   for (i in best_blocks){
