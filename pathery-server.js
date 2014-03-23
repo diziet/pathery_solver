@@ -30,10 +30,33 @@ app.post('/place_greedy', middleware, function(req, res){
   }
   console.log("REMAINING: " + remaining)
   var result = Analyst.place_greedy(JSON.parse(req.param('board')), JSON.parse(req.param('solution')), remaining);
+
+  board = JSON.parse(req.param('board'))
+  graph = new Analyst.PatheryGraph(board)
+  
+  solution = JSON.parse(req.param('solution'))
+  keyed_solution = []
+
+  for (i in solution){
+    keyed_solution.push(graph.keyify(solution[i]))
+  }
+
+  console.log("KEYED SOLUTION")
+  console.log(keyed_solution)
+  var result = Analyst.place_greedy2(board, keyed_solution, remaining);
   console.log("ms elapsed: " , new Date().getTime() - t)
   console.log("FINAL RESULT:" + result[0])
   console.log("FINAL RESULT SCORE:" + result[1])
   res.json(result[0]);
+  best_blocks = result[0]
+  unkeyed_blocks = []
+  for (i in best_blocks){
+    unkeyed_blocks.push(graph.unkeyify(best_blocks[i]))
+  }
+  //console.log("UNKEYED")
+  //console.log(best_blocks)
+  //console.log(unkeyed_blocks)
+  res.json(unkeyed_blocks);
 });
 
 app.post('/improve_solution', middleware, function(req, res){
