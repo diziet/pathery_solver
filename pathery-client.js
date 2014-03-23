@@ -67,7 +67,7 @@ if (typeof mt_local_testing === 'undefined') {
       var mapid = Therapist.get_mapid();
       var walls_left = Therapist.walls_remaining(mapid);
 
-      if (!walls_left) {return Therapist.send_solution(mapid);}
+      //if (!walls_left) {return Therapist.send_solution(mapid);}
 
       Analyst.place_greedy(Therapist.get_board(mapid), Therapist.get_solution(mapid), walls_left, function(result) {
         Therapist.load_solution(mapid, result);
