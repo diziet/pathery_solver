@@ -596,6 +596,84 @@ function sortByNumber(a, b){
   return (b - a)
 }
 
+function place_greedy2(board, cur_blocks, depth, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
+  if (graph == undefined){
+    var graph = new PatheryGraph(board);
+  } else{
+    graph.used_teleports = {};
+  } 
+  if (already_tried_combination == undefined){
+    already_tried_combination = {}
+  }
+  if (blocked_list == undefined){
+    blocked_list = []
+  }
+
+  var best_val = 0;
+  var best_blocks = [];
+  var current_blocks = graph.dictify_blocks2(cur_blocks);
+  var item;
+  var new_block;
+  var score;
+  var path;
+  var relevant_blocks;
+  for (var i = 0; i< 50000; i++ ){
+    var table = [];
+    //console.log(i)
+    for (block in current_blocks){
+      delete current_blocks[block]
+      path = find_pathery_path(graph, current_blocks)
+      //  console.log(path)
+      score = path.value
+        // console.log("RELEVANT BLOCKS")
+        // console.log(relevant_blocks)
+      relevant_blocks = path.paths[0]
+      if (isNaN(score) || score == undefined){
+        score = 31
+      }
+      table.push({weight: Math.round(Math.pow(score - 30, 3)), id: block})
+      current_blocks[block] = true;
+    }
+    item = RWC(table)
+    // console.log(table)
+    score = find_pathery_path(graph, current_blocks).value
+    if (score >= best_val){
+      best_val = score
+      best_blocks = Object.keys(current_blocks)
+      console.log(best_blocks)
+      console.log(score)
+    }
+    delete current_blocks[item]
+
+    while (true) {
+      //console.log("FJIWEF")\
+      if (relevant_blocks == null){
+        new_block = Math.round(graph.n * graph.m * Math.random())
+      } else{
+        index = Math.round((relevant_blocks.length - 1 ) * Math.random())
+        new_block = relevant_blocks[index]
+      }
+      // console.log(keys)
+      // console.log("INDEX")
+      // console.log(index)
+      // console.log(new_block)
+      if (graph.serial_board[new_block] == ' ' && current_blocks[new_block] != true) {
+        current_blocks[new_block] = true
+
+        break;
+      }
+    }
+    //console.log(relevant_blocks)
+    // console.log("NEW BLOCK")
+    // console.log(new_block)
+
+    //console.log("KEYS")
+    // console.log(Object.keys(current_blocks))
+  }
+  console.log(best_val)
+  return [best_blocks]
+  
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
