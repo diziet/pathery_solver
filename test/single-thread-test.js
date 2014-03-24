@@ -28,7 +28,7 @@ var iterations = 0;
 var highestInCurrentIntervals = null;
 var topScoreHitCount;
 
-while(topScore !== OPTIMAL_SCORE) {
+while(topScore < OPTIMAL_SCORE) {
   var result = Analyst.annealingIteration(graph, currBlocks);
   var score = result.score;
 
@@ -45,7 +45,7 @@ while(topScore !== OPTIMAL_SCORE) {
     highestInCurrentIntervals = score;
   }
 
-  if(iterations % 10000 == 0) {
+  if(iterations % 10000 === 0) {
     console.log(iterations, highestInCurrentIntervals);
 
     highestInCurrentIntervals = null;
