@@ -21,7 +21,7 @@ var topScore = null;
 
 for(i = 0; i < WORKER_COUNT; i++) {
   var initialBlocks = {};
-  for(var i = 0; i < BLOCK_COUNT; i++) {
+  for(var j = 0; j < BLOCK_COUNT; j++) {
     Analyst.placeBlock(graph, initialBlocks);
   }
 
