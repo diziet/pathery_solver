@@ -27,9 +27,9 @@ Analyst.compute_value = function(board, solution, cb) {
     cb);
 }
 
-Analyst.place_greedy = function(board, solution, remaining, cb) {
+Analyst.place_greedy = function(board, solution, remaining, total, cb) {
   this.post('place_greedy',
-    {'board': JSON.stringify(board), 'solution': JSON.stringify(solution), 'remaining': JSON.stringify(remaining)},
+    {'board': JSON.stringify(board), 'solution': JSON.stringify(solution), 'remaining': JSON.stringify(remaining), "total":JSON.stringify(total)},
     cb);
 }
 
@@ -66,10 +66,10 @@ if (typeof mt_local_testing === 'undefined') {
     Therapist.register_hotkey('F', function(e) { // override existing GO
       var mapid = Therapist.get_mapid();
       var walls_left = Therapist.walls_remaining(mapid);
-
+      var wallsTotal = Therapist.wallsTotal(mapid);
       //if (!walls_left) {return Therapist.send_solution(mapid);}
 
-      Analyst.place_greedy(Therapist.get_board(mapid), Therapist.get_solution(mapid), walls_left, function(result) {
+      Analyst.place_greedy(Therapist.get_board(mapid), Therapist.get_solution(mapid), walls_left, wallsTotal, function(result) {
         Therapist.load_solution(mapid, result);
         Therapist.send_solution(mapid);
       })
