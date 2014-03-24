@@ -623,16 +623,44 @@ function annealingIteration(graph, currBlocks) {
 exports.annealingIteration = annealingIteration;
 
 function placeBlock(graph, currBlocks) {
-  while (true) {
-    var pathSansBlock = find_pathery_path(graph, currBlocks);
-    var relevantBlocks = pathSansBlock.paths[0];
+  var pathSansBlock = find_pathery_path(graph, currBlocks);
+  var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
+  var newBlockKey;
+  var updatedPath;
 
-    var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
+  while (relevantBlocks.length > 0) {
+    var newBlockIdx = Math.floor((relevantBlocks.length) * Math.random());
+    newBlockKey = relevantBlocks[newBlockIdx];
 
-    if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
+    if (graph.serial_board[newBlockKey] === ' ') {
       currBlocks[newBlockKey] = true;
 
-      var updatedPath = find_pathery_path(graph, currBlocks);
+      updatedPath = find_pathery_path(graph, currBlocks);
+
+      if(updatedPath === null || !updatedPath.value) {
+        delete currBlocks[newBlockKey];
+
+        relevantBlocks.splice(newBlockIdx, 1);
+      } else {
+        return {
+          blockKey: newBlockKey,
+          score: updatedPath.value,
+          solution: currBlocks
+        }
+      }
+    }
+  }
+
+  // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
+  // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
+  var maxRandomBlock = graph.m * graph.n - 1;
+  while(true) {
+    newBlockKey = Math.floor(maxRandomBlock * Math.random());
+
+    if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+      currBlocks[newBlockKey] = true;
+
+      updatedPath = find_pathery_path(graph, currBlocks);
 
       if(updatedPath === null || !updatedPath.value) {
         delete currBlocks[newBlockKey];
