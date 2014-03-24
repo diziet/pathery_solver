@@ -158,6 +158,8 @@ function PatheryGraph(board) {
 
 }
 
+exports.PatheryGraph = PatheryGraph;
+
 PatheryGraph.prototype.keyify_coordinates = function(x, y) {
   return x * this.m + y;
 }
@@ -597,6 +599,56 @@ function sortByNumber(a, b){
   return (b - a)
 }
 
+function annealingIteration(graph, currBlocks) {
+  var table = [];
+
+  for (var blockKey in currBlocks) {
+    delete currBlocks[blockKey];
+
+    var path = find_pathery_path(graph, currBlocks)
+    var blockScore = path.value;
+    if(!blockScore) { throw new Error('invariant'); }
+
+    currBlocks[blockKey] = true;
+
+    table.push({ weight: Math.round(Math.pow(blockScore, 3)), id: blockKey });
+  }
+
+  var blockKeyToRemove = RWC(table);
+  delete currBlocks[blockKeyToRemove];
+
+  return placeBlock(graph, currBlocks);
+}
+
+exports.annealingIteration = annealingIteration;
+
+function placeBlock(graph, currBlocks) {
+  while (true) {
+    var pathSansBlock = find_pathery_path(graph, currBlocks);
+    var relevantBlocks = pathSansBlock.paths[0];
+
+    var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
+
+    if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
+      currBlocks[newBlockKey] = true;
+
+      var updatedPath = find_pathery_path(graph, currBlocks);
+
+      if(updatedPath === null || !updatedPath.value) {
+        delete currBlocks[newBlockKey];
+      } else {
+        return {
+          blockKey: newBlockKey,
+          score: updatedPath.value,
+          solution: currBlocks
+        }
+      }
+    }
+  }
+}
+
+exports.placeBlock = placeBlock;
+
 function place_greedy2(board, cur_blocks, depth, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
   if (graph == undefined){
     var graph = new PatheryGraph(board);
@@ -612,13 +664,13 @@ function place_greedy2(board, cur_blocks, depth, previous_solution, previous_blo
 
   var best_val = 0;
   var best_blocks = [];
-  var current_blocks = graph.dictify_blocks2(cur_blocks);
+  var current_blocks = graph.dictify_blocks(cur_blocks);
   var item;
   var new_block;
   var score;
   var path;
   var relevant_blocks;
-  for (var i = 0; i< 50000; i++ ){
+  for (var i = 0; i < 10; i++ ){
     var table = [];
     //console.log(i)
     for (block in current_blocks){
@@ -641,8 +693,8 @@ function place_greedy2(board, cur_blocks, depth, previous_solution, previous_blo
     if (score >= best_val){
       best_val = score
       best_blocks = Object.keys(current_blocks)
-      console.log(best_blocks)
-      console.log(score)
+      // console.log(best_blocks)
+      // console.log(score)
     }
     delete current_blocks[item]
 
@@ -671,10 +723,13 @@ function place_greedy2(board, cur_blocks, depth, previous_solution, previous_blo
     //console.log("KEYS")
     // console.log(Object.keys(current_blocks))
   }
-  console.log(best_val)
-  return [best_blocks]
+  //console.log(best_val)
+  return [best_blocks, best_val]
   
 }
+
+exports.place_greedy2 = place_greedy2;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
