@@ -119,28 +119,25 @@ module.exports.Client.prototype.getJSON = function (path, options) {
         port: this.port
       },
       function (response) {
-        switch(response.statusCode) {
-          case 200:
-            var buffer = '';
+        var buffer = '';
 
-            response.setEncoding('utf8');
+        response.setEncoding('utf8');
 
-            response.on('data', function (chunk) {
-              buffer += chunk;
-            });
+        response.on('data', function (chunk) {
+          buffer += chunk;
+        });
 
-            response.on('end', function() {
-              try {
-                deferred.resolve(JSON.parse(buffer));
-              } catch(e) {
-                deferred.reject(response);
-              }
-            });
-
-            break;
-          default:
-            deferred.reject(response)
-        }
+        response.on('end', function() {
+          if(response.statusCode === 200) {
+            try {
+              deferred.resolve(JSON.parse(buffer));
+            } catch(e) {
+              deferred.reject({ response: response, body: buffer });
+            }
+          } else {
+            deferred.reject({ response: response, body: buffer });
+          }
+        });
       }
   );
 
@@ -174,25 +171,25 @@ module.exports.Client.prototype.post = function (path, options) {
         port: this.port
       },
       function (response) {
-        switch(response.statusCode) {
-          case 200:
-          case 302:
-            var buffer = '';
+        var buffer = '';
 
-            response.setEncoding('utf8');
+        response.setEncoding('utf8');
 
-            response.on('data', function (chunk) {
-              buffer += chunk;
-            });
+        response.on('data', function (chunk) {
+          buffer += chunk;
+        });
 
-            response.on('end', function() {
+        response.on('end', function() {
+          if(response.statusCode === 200 || response.statusCode === 302) {
+            try {
               deferred.resolve(buffer);
-            });
-
-            break;
-          default:
-            deferred.reject(response)
-        }
+            } catch(e) {
+              deferred.reject({ response: response, body: buffer });
+            }
+          } else {
+            deferred.reject({ response: response, body: buffer });
+          }
+        });
       }
   );
 
