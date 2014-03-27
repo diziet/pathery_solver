@@ -1,5 +1,8 @@
 var ChildProcess = require('child_process');
+var FS = require('fs');
+
 var Getopt = require('node-getopt');
+var _ = require('underscore');
 
 var Analyst = require(__dirname + '/src/analyst.js');
 var PatheryAPI = require(__dirname + '/src/communication/api.js');
@@ -23,6 +26,8 @@ var configuration = {
 };
 
 var getopt = new Getopt([
+    // Config file. Should be parsed first.
+    ['', 'config-file=PATH', 'Path to a JSON file with a hash of values which will be merged into configuration. See config/example.json for an example.'],
     // Pathery server options.
     ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + DEFAULT_HOSTNAME + ').'],
     ['', 'port=INT', 'The port for the pathery server (default: ' + DEFAULT_PORT + ').'],
@@ -50,6 +55,14 @@ var options = opts.options;
 
 command = args.shift();
 commandParameters = args;
+
+// Should be parsed first, so that other arguments will override it.
+if(options.hasOwnProperty('config-file')) {
+  _.extend(
+      configuration,
+      JSON.parse(FS.readFileSync(options['config-file'], { encoding: 'utf8' }))
+  );
+}
 
 if(options.hasOwnProperty('hostname')) {
   configuration.hostname = options['hostname'];

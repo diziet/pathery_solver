@@ -36,7 +36,8 @@
   "dependencies" : {
     "express"   :  "3.3.x",
     "node-getopt": "0.2.x",
-    "q": "1.0.x"
+    "q": "1.0.x",
+    "underscore": "1.6.x"
   },
   "devDependencies": {
   },
