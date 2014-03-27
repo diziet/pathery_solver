@@ -20,6 +20,7 @@ var configuration = {
   port: DEFAULT_PORT,
   optimalScore: null,
   workerCount: 1,
+  retryOnNotFoundDelay: null,
   postResults: false,
   auth: null,
   userId: null
@@ -34,6 +35,8 @@ var getopt = new Getopt([
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
+    // Retry options.
+    ['', 'retry-on-not-found-delay=INT', 'Number of seconds to wait after a 404 error before retrying the request (optional).'],
     // Result posting.
     ['', 'post-results', 'Post top results to the pathery server.'],
     ['', 'auth=STRING', 'Authentication key to use when authenticating with the pathery server (required to post results).'],
@@ -98,6 +101,23 @@ if(options.hasOwnProperty('workers')) {
   }
 }
 
+if(options.hasOwnProperty('retry-on-not-found-delay')) {
+  var rawRetryOnNotFoundDelay = options['retry-on-not-found-delay'];
+
+  if(rawRetryOnNotFoundDelay) {
+    configuration.retryOnNotFoundDelay = parseInt(rawRetryOnNotFoundDelay);
+
+    if(!configuration.retryOnNotFoundDelay) {
+      console.error('--retry-on-not-found-delay requires an integral argument.');
+
+      process.exit(2);
+    }
+  } else {
+    configuration.retryOnNotFoundDelay = null;
+  }
+
+}
+
 if(options.hasOwnProperty('post-results')) {
   configuration.postResults = options['post-results'];
 }
@@ -148,14 +168,29 @@ switch(command) {
       process.exit(3);
     }
 
-    client.getMap(mapId).then(
-        function (map) {
-          solveMap(client, map, configuration);
-        },
-        function (error) {
-          console.error('failed to get map ' + mapId + ': ' + error.response.statusCode + ' - "' + error.body + '"');
-        }
-    );
+    function getMapAndSolve() {
+      client.getMap(mapId).then(
+          function (map) {
+            solveMap(client, map, configuration);
+          },
+          function (error) {
+            var response = error.response;
+
+            if(response) {
+              if(response.statusCode === 404 && configuration.retryOnNotFoundDelay) {
+                console.log('map ' + mapId + ' not found -- retrying in ' + configuration.retryOnNotFoundDelay + ' seconds');
+                setTimeout(getMapAndSolve, configuration.retryOnNotFoundDelay * 1000);
+              } else {
+                console.error('failed to get map ' + mapId + ': ' + response.statusCode + ' - "' + error.body + '"');
+              }
+            } else {
+              console.error(error);
+            }
+          }
+      );
+    }
+
+    getMapAndSolve();
 
     break;
   default:
@@ -216,7 +251,13 @@ function solveMap(client, map, configuration) {
                 console.log(responseBody);
               },
               function (error) {
-                console.error('failed to post solution: ' + error.response.statusCode + ' - "' + error.body + '"');
+                var response = error.response;
+
+                if(response) {
+                  console.error('failed to post solution: ' + response.statusCode + ' - "' + error.body + '"');
+                } else {
+                  console.error(error);
+                }
               }
           );
         }
