@@ -20,6 +20,7 @@ var configuration = {
   port: DEFAULT_PORT,
   optimalScore: null,
   workerCount: 1,
+  startAt: null,
   retryOnNotFoundDelay: null,
   postResults: false,
   auth: null,
@@ -35,7 +36,8 @@ var getopt = new Getopt([
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
-    // Retry options.
+    // Retry and timing options.
+    ['', 'start-at=DATE', 'Wait until the specified date/time to start running, e.g. "2014-03-01 23:59:30", (optional).'],
     ['', 'retry-on-not-found-delay=INT', 'Number of seconds to wait after a 404 error before retrying the request (optional).'],
     // Result posting.
     ['', 'post-results', 'Post top results to the pathery server.'],
@@ -101,6 +103,16 @@ if(options.hasOwnProperty('workers')) {
   }
 }
 
+if(options.hasOwnProperty('start-at')) {
+  configuration.startAt = new Date(options['start-at']);
+
+  if(!configuration.startAt) {
+    console.error('--start-at requires a date argument.');
+
+    process.exit(2);
+  }
+}
+
 if(options.hasOwnProperty('retry-on-not-found-delay')) {
   var rawRetryOnNotFoundDelay = options['retry-on-not-found-delay'];
 
@@ -115,7 +127,6 @@ if(options.hasOwnProperty('retry-on-not-found-delay')) {
   } else {
     configuration.retryOnNotFoundDelay = null;
   }
-
 }
 
 if(options.hasOwnProperty('post-results')) {
@@ -154,53 +165,94 @@ if(configuration.postResults) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Validate and route based on given command.
+// Wait for the start time (if specified) and then route based on the given command.
 
-var client = new PatheryAPI.Client(configuration);
+if(configuration.startAt) {
+  var waitMilliseconds = configuration.startAt.getTime() - (new Date()).getTime();
 
-switch(command) {
-  case 'map':
-    var mapId = parseInt(commandParameters[0]);
+  if(waitMilliseconds > 0) {
+    console.log('Waiting', waitMilliseconds / 60000, 'minutes to start until', configuration.startAt, '(' + waitMilliseconds + ' milliseconds)');
 
-    if(!mapId) {
-      console.errors('Bad mapId.');
+    setTimeout(doRouteCommand, waitMilliseconds);
+  } else {
+    doRouteCommand(true);
+  }
+} else {
+  doRouteCommand(true);
+}
 
-      process.exit(3);
-    }
+/**
+ * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
+ */
+function doRouteCommand(wasNotDelayed) {
+  var client = new PatheryAPI.Client(configuration);
 
-    function getMapAndSolve() {
-      client.getMap(mapId).then(
-          function (map) {
-            solveMap(client, map, configuration);
-          },
-          function (error) {
-            var response = error.response;
+  if(!wasNotDelayed) {
+    console.log('Started command routing at', new Date());
+  }
 
-            if(response) {
-              if(response.statusCode === 404 && configuration.retryOnNotFoundDelay) {
-                console.log('map ' + mapId + ' not found -- retrying in ' + configuration.retryOnNotFoundDelay + ' seconds');
-                setTimeout(getMapAndSolve, configuration.retryOnNotFoundDelay * 1000);
-              } else {
-                console.error('failed to get map ' + mapId + ': ' + response.statusCode + ' - "' + error.body + '"');
-              }
-            } else {
-              console.error(error);
-            }
-          }
-      );
-    }
+  switch(command) {
+    case 'map':
+      executeMapCommand(client, commandParameters, configuration);
 
-    getMapAndSolve();
+      break;
+    default:
+      console.error('Unknown command: "' + command + '".');
 
-    break;
-  default:
-    console.error('Unknown command: "' + command + '".');
-
-    process.exit(2);
+      process.exit(2);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Main logic.
+// Command-specific logic.
+
+function executeMapCommand(client, commandParameters, configuration) {
+  var mapId = parseInt(commandParameters[0]);
+
+  if(!mapId) {
+    console.errors('Bad mapId.');
+
+    process.exit(3);
+  }
+
+  doGetMapAndSolve(true);
+
+  ////////////////////
+  // Helper functions.
+
+  /**
+   * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
+   */
+  function doGetMapAndSolve(wasNotDelayed) {
+    client.getMap(mapId).then(
+        function (map) {
+          if(!wasNotDelayed) {
+            console.log('Successfully retrieved map at', new Date());
+          }
+
+          solveMap(client, map, configuration);
+        },
+        function (error) {
+          var response = error.response;
+
+          if(response) {
+            if(response.statusCode === 404 && configuration.retryOnNotFoundDelay) {
+              console.log('map ' + mapId + ' not found -- retrying in ' + configuration.retryOnNotFoundDelay + ' seconds');
+
+              setTimeout(doGetMapAndSolve, configuration.retryOnNotFoundDelay * 1000);
+            } else {
+              console.error('failed to get map ' + mapId + ': ' + response.statusCode + ' - "' + error.body + '"');
+            }
+          } else {
+            console.error(error);
+          }
+        }
+    );
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// General functionality.
 
 // FIXME: Fails on map 4519.
 /**
