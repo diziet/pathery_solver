@@ -5,9 +5,6 @@ var Q = require('q');
 
 var Map = require(__dirname + '/../map.js');
 
-const PATHERY_HOSTNAME = 'www.pathery.com';
-const PATHERY_PORT = 80;
-
 /**
  *
  * @param {Object} [attributes]
@@ -17,6 +14,12 @@ module.exports.Client = function (attributes) {
   if(attributes) {
     /** @member {String} */
     this.auth = attributes['auth'];
+
+    /** @member {String} */
+    this.hostname = attributes['hostname'];
+
+    /** @member {Number} */
+    this.port = attributes['port'];
 
     /** @member {Number} */
     this.userId = attributes['userId'];
@@ -104,12 +107,16 @@ module.exports.Client.prototype.getJSON = function (path, options) {
   var headers = this.getDefaultHeaders(options);
   var deferred = Q.defer();
 
+  if(!this.hostname || !this.port) {
+    throw new Error('invariant');
+  }
+
   var request = http.request(
       {
         headers: headers,
-        hostname: PATHERY_HOSTNAME,
+        hostname: this.hostname,
         path: path,
-        port: PATHERY_PORT
+        port: this.port
       },
       function (response) {
         switch(response.statusCode) {
@@ -154,13 +161,17 @@ module.exports.Client.prototype.post = function (path, options) {
   var headers = this.getDefaultHeaders(options);
   var deferred = Q.defer();
 
+  if(!this.hostname || !this.port) {
+    throw new Error('invariant');
+  }
+
   var request = http.request(
       {
         headers: headers,
-        hostname: PATHERY_HOSTNAME,
+        hostname: this.hostname,
         method: 'POST',
         path: path,
-        port: PATHERY_PORT
+        port: this.port
       },
       function (response) {
         switch(response.statusCode) {

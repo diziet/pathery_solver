@@ -7,9 +7,14 @@ var PatheryAPI = require(__dirname + '/src/communication/api.js');
 ////////////////////////////////////////////////////////////////////////////////
 // Parameter parsing.
 
+const DEFAULT_HOSTNAME = 'www.pathery.com';
+const DEFAULT_PORT = 80;
+
 var command;
 var commandParameters;
 var configuration = {
+  hostname: DEFAULT_HOSTNAME,
+  port: DEFAULT_PORT,
   optimalScore: null,
   workerCount: 1,
   postResults: false,
@@ -18,6 +23,9 @@ var configuration = {
 };
 
 var getopt = new Getopt([
+    // Pathery server options.
+    ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + DEFAULT_HOSTNAME + ').'],
+    ['', 'port=INT', 'The port for the pathery server (default: ' + DEFAULT_PORT + ').'],
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
@@ -42,6 +50,20 @@ var options = opts.options;
 
 command = args.shift();
 commandParameters = args;
+
+if(options.hasOwnProperty('hostname')) {
+  configuration.hostname = options['hostname'];
+}
+
+if(options.hasOwnProperty('port')) {
+  configuration.port = parseInt(options['port']);
+
+  if(!configuration.port) {
+    console.error('--port requires an integral argument.');
+
+    process.exit(2);
+  }
+}
 
 if(options.hasOwnProperty('optimal-score')) {
   configuration.optimalScore = parseInt(options['optimal-score']);
@@ -101,10 +123,7 @@ if(configuration.postResults) {
 ////////////////////////////////////////////////////////////////////////////////
 // Validate and route based on given command.
 
-var client = new PatheryAPI.Client({
-  auth: configuration.auth,
-  userId: configuration.userId
-});
+var client = new PatheryAPI.Client(configuration);
 
 switch(command) {
   case 'map':
