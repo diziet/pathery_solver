@@ -2,3 +2,6 @@ map_maker/out.txt
 node_modules
 .*
 queries/cached_queries
+
+# Ignore everything other than config/example.json.
+config/*.json

@@ -1,0 +1,7 @@
+{
+  "hostname": "www.pathery.com",
+  "port": 80,
+  "workerCount": 1,
+  "auth": null,
+  "userId": null
+}
