@@ -4,11 +4,10 @@
  *
  * @param {Client} client
  * @param {Map} map
- * @param {PatheryGraph} graph
  * @param {Object} configuration
  * @constructor TopResultTracker
  */
-module.exports = function (client, map, graph, configuration) {
+module.exports = function (client, map, configuration) {
   ////////////////////
   // Input parameter attributes.
 
@@ -17,9 +16,6 @@ module.exports = function (client, map, graph, configuration) {
 
   /** @member {Map} */
   this.map = map;
-
-  /** @member {PatheryGraph} */
-  this.graph = graph;
 
   ////////////////////
   // Configuration attributes.
@@ -43,7 +39,7 @@ module.exports = function (client, map, graph, configuration) {
  */
 module.exports.prototype.registerResult = function (result) {
   if(this.topScore === null || result.score > this.topScore) {
-    var solution = this.graph.listify_blocks(result.solution);
+    var solution = this.map.graph().listify_blocks(result.solution);
 
     this.topScore = result.score;
 
