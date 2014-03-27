@@ -29,8 +29,16 @@ module.exports = function (client, map, configuration) {
   ////////////////////
   // Local attributes.
 
+  /** @member {Date} */
+  this.startTime = new Date();
+
   /** @member {Number} */
   this.topScore = null;
+
+  ////////////////////
+  // End (general) attribute initialization.
+
+  this.initializeDelayTopScoreNotification();
 };
 
 /**
@@ -39,27 +47,12 @@ module.exports = function (client, map, configuration) {
  */
 module.exports.prototype.registerResult = function (result) {
   if(this.topScore === null || result.score > this.topScore) {
-    var solution = this.map.graph().listify_blocks(result.solution);
-
     this.topScore = result.score;
 
-    // TODO: Wait some (short) amount of time before posting results.
-    console.log('New top score: ' + this.topScore + ' reached at ' + new Date() + '. Solution:', solution);
-    if(this.postResults) {
-      this.client.postSolution(this.map, solution).then(
-          function (responseBody) {
-            console.log(responseBody);
-          },
-          function (error) {
-            var response = error.response;
-
-            if(response) {
-              console.error('failed to post solution: ' + response.statusCode + ' - "' + error.body + '"');
-            } else {
-              console.error(error);
-            }
-          }
-      );
+    if(this.delayTopScoreNotifications) {
+      this.delayedSolution = result.solution;
+    } else {
+      this.onNewTopScore(result.solution);
     }
   }
 };
@@ -69,4 +62,56 @@ module.exports.prototype.registerResult = function (result) {
  */
 module.exports.prototype.isOptimal = function () {
   return this.optimalScore && this.topScore >= this.optimalScore;
+};
+
+/**
+ *
+ * @private
+ */
+module.exports.prototype.initializeDelayTopScoreNotification = function () {
+  var self = this;
+
+  this.delayTopScoreNotifications = true;
+  this.delayedSolution = null;
+
+  setTimeout(
+      function () {
+        self.delayTopScoreNotifications = false;
+
+        if(self.delayedSolution) {
+          self.onNewTopScore(self.delayedSolution);
+
+          self.delayedSolution = null;
+        }
+      },
+      1000
+  );
+};
+
+/**
+ * Call to signal that a new top score has been registered.
+ *
+ * @private
+ */
+module.exports.prototype.onNewTopScore = function (rawSolution) {
+  var solution = this.map.graph().listify_blocks(rawSolution);
+
+  console.log('New top score: ' + this.topScore + ' reached after ' + ((Date.now() - this.startTime.getTime()) / 1000) + ' seconds. Solution:', solution);
+
+  if(this.postResults) {
+    this.client.postSolution(this.map, solution).then(
+        function (responseBody) {
+          console.log(responseBody);
+        },
+        function (error) {
+          var response = error.response;
+
+          if(response) {
+            console.error('failed to post solution: ' + response.statusCode + ' - "' + error.body + '"');
+          } else {
+            console.error(error);
+          }
+        }
+    );
+  }
 };
