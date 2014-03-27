@@ -148,10 +148,14 @@ switch(command) {
       process.exit(3);
     }
 
-    // TODO: Handle failure.
-    client.getMap(mapId).then(function (map) {
-      solveMap(client, map, configuration);
-    });
+    client.getMap(mapId).then(
+        function (map) {
+          solveMap(client, map, configuration);
+        },
+        function (error) {
+          console.error('failed to get map ' + mapId + ': ' + error.response.statusCode + ' - "' + error.body + '"');
+        }
+    );
 
     break;
   default:
@@ -207,8 +211,14 @@ function solveMap(client, map, configuration) {
 
         console.log('New top score: ' + topScore + ' reached at ' + new Date() + '. Solution:', solution);
         if(configuration.postResults) {
-          // TODO: Handle failure.
-          client.postSolution(map, solution).then(function (response) { console.log('response', response); });
+          client.postSolution(map, solution).then(
+              function (responseBody) {
+                console.log(responseBody);
+              },
+              function (error) {
+                console.error('failed to post solution: ' + error.response.statusCode + ' - "' + error.body + '"');
+              }
+          );
         }
 
         if(configuration.optimalScore && topScore >= configuration.optimalScore) {
