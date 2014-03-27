@@ -1,5 +1,7 @@
 /** @module pathery */
 
+var Analyst = require(__dirname + '/analyst.js');
+
 /**
  *
  * @param {Object} rawObject
@@ -25,6 +27,13 @@ module.exports = function (rawObject) {
   this.walls = parseInt(rawObject.walls);
 };
 
+/**
+ *
+ * @returns {PatheryGraph}
+ */
+module.exports.prototype.graph = function () {
+  return this._graph || (this._graph = new Analyst.PatheryGraph(this.board));
+};
 
 /**
  * Adapted from Therapist.parse_board for use in Map constructor.

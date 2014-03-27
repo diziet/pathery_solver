@@ -263,9 +263,7 @@ function executeMapCommand(client, commandParameters, configuration) {
  * @param {Object} configuration
  */
 function solveMap(client, map, configuration) {
-  var graph = new Analyst.PatheryGraph(map.board);
-
-  var topResultTracker = new TopResultTracker(client, map, graph, configuration);
+  var topResultTracker = new TopResultTracker(client, map, configuration);
   var workers = [];
 
   for(var i = 0; i < configuration.workerCount; i++) {
@@ -277,12 +275,12 @@ function solveMap(client, map, configuration) {
 
     var initialBlocks = {};
     for(var j = 0; j < map.walls; j++) {
-      Analyst.placeBlock(graph, initialBlocks);
+      Analyst.placeBlock(map.graph(), initialBlocks);
     }
 
     worker.send({
       board: map.board,
-      initialSolution: graph.listify_blocks(initialBlocks)
+      initialSolution: map.graph().listify_blocks(initialBlocks)
     });
 
     worker.on('message', function (childTopResult) {
