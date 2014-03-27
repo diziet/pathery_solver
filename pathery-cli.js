@@ -6,6 +6,7 @@ var _ = require('underscore');
 
 var Analyst = require(__dirname + '/src/analyst.js');
 var PatheryAPI = require(__dirname + '/src/communication/api.js');
+var TopResultTracker = require(__dirname + '/src/top-result-tracker.js');
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameter parsing.
@@ -264,7 +265,7 @@ function executeMapCommand(client, commandParameters, configuration) {
 function solveMap(client, map, configuration) {
   var graph = new Analyst.PatheryGraph(map.board);
 
-  var topScore = null;
+  var topResultTracker = new TopResultTracker(client, map, graph, configuration);
   var workers = [];
 
   for(var i = 0; i < configuration.workerCount; i++) {
@@ -284,44 +285,16 @@ function solveMap(client, map, configuration) {
       initialSolution: graph.listify_blocks(initialBlocks)
     });
 
-    // TODO: Wait some (short) amount of time before posting results.
-    worker.on('message', registerChildTopResult);
+    worker.on('message', function (childTopResult) {
+      topResultTracker.registerResult(childTopResult);
 
-    ////////////////////
-    // Helper functions.
+      if(topResultTracker.isOptimal()) {
+        console.log('Reached optimal score...stopping workers.');
 
-    function registerChildTopResult(childTopResult) {
-      if(topScore === null || childTopResult.score > topScore) {
-        var solution = graph.listify_blocks(childTopResult.solution);
-
-        topScore = childTopResult.score;
-
-        console.log('New top score: ' + topScore + ' reached at ' + new Date() + '. Solution:', solution);
-        if(configuration.postResults) {
-          client.postSolution(map, solution).then(
-              function (responseBody) {
-                console.log(responseBody);
-              },
-              function (error) {
-                var response = error.response;
-
-                if(response) {
-                  console.error('failed to post solution: ' + response.statusCode + ' - "' + error.body + '"');
-                } else {
-                  console.error(error);
-                }
-              }
-          );
-        }
-
-        if(configuration.optimalScore && topScore >= configuration.optimalScore) {
-          console.log('Reached optimal score...stopping workers.');
-
-          workers.forEach(function (worker) {
-            worker.kill();
-          });
-        }
+        workers.forEach(function (worker) {
+          worker.kill();
+        });
       }
-    }
+    });
   }
 }
