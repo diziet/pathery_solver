@@ -8,12 +8,12 @@ var FS = require('fs');
 
 var _ = require('underscore');
 
-const CONFIGURATION_DEFAULTS = {
+module.exports.CONFIGURATION_DEFAULTS = {
   placeBlockVersion: 'Oliver',
   repeatableRandomNumbers: false
 };
 
-const CONFIGURATION_ENV_VARIABLE_PREFIX = 'PATHERY_EXPLORATORY_CONFIG_';
+module.exports.CONFIGURATION_ENV_VARIABLE_PREFIX = 'PATHERY_EXPLORATORY_CONFIG_';
 
 /**
  * Experimental/exploratory configuration. Defaults specified in CONFIGURATION_DEFAULTS, which are overriden by
@@ -28,7 +28,7 @@ const CONFIGURATION_ENV_VARIABLE_PREFIX = 'PATHERY_EXPLORATORY_CONFIG_';
  * @property {Number | Boolean} configuration.repeatableRandomNumbers
  */
 module.exports.configuration = (function () {
-  var configuration = _.extend({ }, CONFIGURATION_DEFAULTS);
+  var configuration = _.extend({ }, module.exports.CONFIGURATION_DEFAULTS);
   var rawConfigFileContents;
 
   try {
@@ -45,9 +45,9 @@ module.exports.configuration = (function () {
     _.extend(configuration, JSON.parse(rawConfigFileContents));
   }
 
-  for(var k in CONFIGURATION_DEFAULTS) {
-    if(CONFIGURATION_DEFAULTS.hasOwnProperty(k)) {
-      var envVariableValue = process.env[CONFIGURATION_ENV_VARIABLE_PREFIX + k];
+  for(var k in module.exports.CONFIGURATION_DEFAULTS) {
+    if(module.exports.CONFIGURATION_DEFAULTS.hasOwnProperty(k)) {
+      var envVariableValue = process.env[module.exports.CONFIGURATION_ENV_VARIABLE_PREFIX + k];
 
       if(envVariableValue) {
         configuration[k] = JSON.parse(envVariableValue);

@@ -4,6 +4,7 @@ var http = require('http');
 var QueryString = require('querystring');
 
 var Q = require('q');
+var _ = require('underscore');
 
 var Map = require(__dirname + '/../map.js');
 
@@ -13,20 +14,29 @@ var Map = require(__dirname + '/../map.js');
  * @constructor
  */
 module.exports.Client = function (attributes) {
-  if(attributes) {
-    /** @member {String} */
-    this.auth = attributes['auth'];
+  attributes = _.extend(
+      {
+        hostname: module.exports.Client.DEFAULT_HOSTNAME,
+        port: module.exports.Client.DEFAULT_PORT
+      },
+      attributes
+  );
 
-    /** @member {String} */
-    this.hostname = attributes['hostname'];
+  /** @member {String} */
+  this.auth = attributes['auth'];
 
-    /** @member {Number} */
-    this.port = attributes['port'];
+  /** @member {String} */
+  this.hostname = attributes['hostname'];
 
-    /** @member {Number} */
-    this.userId = attributes['userId'];
-  }
+  /** @member {Number} */
+  this.port = attributes['port'];
+
+  /** @member {Number} */
+  this.userId = attributes['userId'];
 };
+
+module.exports.Client.DEFAULT_HOSTNAME = 'www.pathery.com';
+module.exports.Client.DEFAULT_PORT = 80;
 
 /**
  *

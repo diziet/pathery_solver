@@ -11,14 +11,13 @@ var TopResultTracker = require(__dirname + '/src/top-result-tracker.js');
 ////////////////////////////////////////////////////////////////////////////////
 // Parameter parsing.
 
-const DEFAULT_HOSTNAME = 'www.pathery.com';
-const DEFAULT_PORT = 80;
+
 
 var command;
 var commandParameters;
 var configuration = {
-  hostname: DEFAULT_HOSTNAME,
-  port: DEFAULT_PORT,
+  hostname: PatheryAPI.Client.DEFAULT_HOSTNAME,
+  port: PatheryAPI.Client.DEFAULT_PORT,
   optimalScore: null,
   printResults: true,
   workerCount: 1,
@@ -33,8 +32,8 @@ var getopt = new Getopt([
     // Config file. Should be parsed first.
     ['', 'config-file=PATH', 'Path to a JSON file with a hash of values which will be merged into configuration. See config/cli.example.json for an example.'],
     // Pathery server options.
-    ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + DEFAULT_HOSTNAME + ').'],
-    ['', 'port=INT', 'The port for the pathery server (default: ' + DEFAULT_PORT + ').'],
+    ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_HOSTNAME + ').'],
+    ['', 'port=INT', 'The port for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_PORT + ').'],
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
     ['', 'no-print-results', 'Do not print top results.'],
