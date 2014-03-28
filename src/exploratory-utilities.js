@@ -25,9 +25,9 @@ const CONFIGURATION_ENV_VARIABLE_PREFIX = 'PATHERY_EXPLORATORY_CONFIG_';
  *
  * @property {Object} configuration
  * @property {String} configuration.placeBlockVersion
- * @property {Boolean} configuration.repeatableRandomNumbers
+ * @property {Number | Boolean} configuration.repeatableRandomNumbers
  */
-var configuration = module.exports.configuration = (function () {
+module.exports.configuration = (function () {
   var configuration = _.extend({ }, CONFIGURATION_DEFAULTS);
   var rawConfigFileContents;
 
@@ -58,28 +58,57 @@ var configuration = module.exports.configuration = (function () {
   return configuration;
 })();
 
-if(configuration.repeatableRandomNumbers) {
-  /**
-   * Drop-in replacement for Math.random, returns a number between 0.0 (inclusive) and 1.0 (exclusive).
-   *
-   * @return {Number}
-   */
-  module.exports.random = (function () {
-    // Taken from http://stackoverflow.com/a/19301306.
+/**
+ * By default is simply an alias for Math.random. Changed to a drop-in replacement for Math.random which supports
+ * seeding (and thus repeatability) if configuration.repeatableRandomNumbers is truthy or via a call to
+ * useRepeatableRandomNumbers.
+ *
+ * @function
+ *
+ * @returns {Number} [0.0, 1.0)
+ */
+module.exports.random = Math.random;
 
-    const MASK = 0xffffffff;
+/**
+ * Set random to use a seeded random number generator.
+ *
+ * N.B.: If testing variations which are influenced by or modify the sequence of random numbers, comparisons made when
+ *     using this must be taken with a **huge** grain of salt.
+ *
+ * @param {Number | *} [seed] - If a number, said value is used to see the generator function.
+ */
+module.exports.useRepeatableRandomNumbers = function (seed) {
+  // No need to do this other than for debugging/reflection clarity.
+  module.exports.configuration.repeatableRandomNumbers = seed || true;
 
-    var m_w = 123456789;
-    var m_z = 987654321;
+  // Adapted from http://en.wikipedia.org/wiki/Random_number_generation#Computational_methods.
 
-    return function () {
-      m_z = (36969 * (m_z & 65535) + (m_z >> 16)) & MASK;
-      m_w = (18000 * (m_w & 65535) + (m_w >> 16)) & MASK;
+  const MASK_TO_INT_32 = 0xffffffff;
+
+  var m_w;              // Must not be zero nor 0x464fffff.
+  var m_z = 987654321;  // Must not be zero nor 0x9068ffff.
+
+  if(typeof seed === 'number') {
+    seed = seed & MASK_TO_INT_32;
+
+    if(seed === 0 || seed === 0x464fffff) {
+      throw new Error('bad seed');
+    } else {
+      m_w = seed;
+    }
+  } else {
+    m_w = 123456789;
+  }
+
+  module.exports.random = function () {
+    m_z = (36969 * (m_z & 65535) + (m_z >> 16)) & MASK_TO_INT_32;
+    m_w = (18000 * (m_w & 65535) + (m_w >> 16)) & MASK_TO_INT_32;
 
 
-      return (((m_z << 16) + m_w) & MASK) / 4294967296 + 0.5;
-    };
-  })();
-} else {
-  module.exports.random = Math.random;
+    return (((m_z << 16) + m_w) & MASK_TO_INT_32) / 4294967296 + 0.5;
+  };
+};
+
+if(module.exports.configuration.repeatableRandomNumbers) {
+  module.exports.useRepeatableRandomNumbers(module.exports.configuration.repeatableRandomNumbers);
 }
