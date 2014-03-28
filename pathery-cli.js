@@ -225,7 +225,7 @@ function executeMapCommand(client, commandParameters, configuration) {
    * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
    */
   function doGetMapAndSolve(wasNotDelayed) {
-    client.getMap(mapId).then(
+    client.getMap(mapId, { preventCaching: !wasNotDelayed }).then(
         function (map) {
           if(!wasNotDelayed) {
             console.log('Successfully retrieved map at', new Date());
