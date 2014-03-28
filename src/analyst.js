@@ -6,7 +6,6 @@
 
 (function(exports) {
 
-RWC = require('random-weighted-choice');
 ROCK_1             = 'r';
 ROCK_2             = 'R';  // never used?
 ROCK_3             = 'q';  // used in seeing double, same as rock?
@@ -599,6 +598,37 @@ function sortByNumber(a, b){
   return (b - a)
 }
 
+/**
+ * Simplified version of [`random-weighted-choice`](https://github.com/parmentf/random-weighted-choice), more performant
+ * as it does not deal with the temperature nor influence parameters.
+ *
+ * @param {{id: Number, weight: Number}[]} table
+ * @returns {Number}
+ */
+function randomWeightedChoice(table) {
+  var accumulator = 0;
+  var i;
+  var choice;
+
+  for(i = 0; i < table.length; i++) {
+    accumulator += table[i].weight;
+  }
+
+  choice = accumulator * Math.random();
+  accumulator = 0;
+
+  for(i = 0; i < table.length; i++) {
+    // OPTIMIZE: Could cache this earlier if we want to modify the elements of table.
+    accumulator += table[i].weight;
+
+    if(choice < accumulator) {
+      return table[i].id;
+    }
+  }
+
+  throw new Error('invariant');
+}
+
 function removeRandomBlock(graph, currBlocks) {
   var table = [];
   for (var blockKey in currBlocks) {
@@ -609,7 +639,7 @@ function removeRandomBlock(graph, currBlocks) {
 
     // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
     if(blockScore) {
-      table.push({ weight: Math.round(Math.pow(blockScore / 10, 4)), id: blockKey });
+      table.push({ id: blockKey, weight: Math.round(Math.pow(blockScore / 10, 4)) });
     }
 
     currBlocks[blockKey] = true;
@@ -620,7 +650,7 @@ function removeRandomBlock(graph, currBlocks) {
     throw new Error('invariant');
   }
 
-  var blockKeyToRemove = RWC(table);
+  var blockKeyToRemove = randomWeightedChoice(table);
 
   delete currBlocks[blockKeyToRemove];
 
