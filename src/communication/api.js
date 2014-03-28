@@ -31,16 +31,25 @@ module.exports.Client = function (attributes) {
 /**
  *
  * @param {Number} mapId
+ * @param {{preventCaching: Boolean}} [options]
  * @returns {Q.Promise} Resolves with a Map object.
  */
-module.exports.Client.prototype.getMap = function (mapId) {
-  return this.getJSON('/a/map/' + mapId + '.js').then(function (rawMapObject) {
+module.exports.Client.prototype.getMap = function (mapId, options) {
+  var requestPath = '/a/map/' + mapId + '.js';
+
+  // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
+  if(options && options.preventCaching) {
+    requestPath += '?' + Date.now();
+  }
+
+  return this.getJSON(requestPath).then(function (rawMapObject) {
     return new Map(rawMapObject);
   });
 };
 
 /**
- * N.B.: This appears to update late (possibly due to intermediate caching).
+ * N.B.: This appears to update late (possibly due to intermediate caching). If the preventDelayed option works for
+ *     #getMap, it will likely work here as well.
  *
  * @param {Date} date
  * @returns {Q.Promise}
