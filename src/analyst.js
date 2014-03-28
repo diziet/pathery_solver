@@ -6,6 +6,8 @@
 
 (function(exports) {
 
+var ExploratoryUtilities = require(__dirname + '/exploratory-utilities.js');
+
 ROCK_1             = 'r';
 ROCK_2             = 'R';  // never used?
 ROCK_3             = 'q';  // used in seeing double, same as rock?
@@ -614,7 +616,7 @@ function randomWeightedChoice(table) {
     accumulator += table[i].weight;
   }
 
-  choice = accumulator * Math.random();
+  choice = accumulator * ExploratoryUtilities.random();
   accumulator = 0;
 
   for(i = 0; i < table.length; i++) {
@@ -658,96 +660,99 @@ function removeRandomBlock(graph, currBlocks) {
 }
 
 var placeBlock;
+switch(ExploratoryUtilities.configuration.placeBlockVersion) {
+  case 'Oliver':
+    placeBlock = function (graph, currBlocks) {
+      var i = 0;
+      while (i < 1000) {
+        i++;
+        var pathSansBlock = find_pathery_path(graph, currBlocks);
+        var relevantBlocks = pathSansBlock.paths[0];
+        if (relevantBlocks == [] || relevantBlocks == undefined){
+          console.log(pathSansBlock)
+          console.log(currBlocks)
+        }
 
-if(process.env['USE_MICHAELS_PLACE_BLOCK'] !== '1') {
-  // Oliver's version
-  placeBlock = function (graph, currBlocks) {
-    var i = 0;
-    while (i < 1000) {
-      i++;
+        // REVIEW: This is going to be biased against the first block. Conversely, it should probably _never_ pick the first (or last) blocks, as the will be the start/end blocks.
+        var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * ExploratoryUtilities.random())];
+
+        if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
+          currBlocks[newBlockKey] = true;
+
+          var updatedPath = find_pathery_path(graph, currBlocks);
+
+          if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+            delete currBlocks[newBlockKey];
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
+          }
+        }
+      }
+    };
+
+    break;
+  case 'Michael':
+    placeBlock = function (graph, currBlocks) {
       var pathSansBlock = find_pathery_path(graph, currBlocks);
-      var relevantBlocks = pathSansBlock.paths[0];
-      if (relevantBlocks == [] || relevantBlocks == undefined){
-        console.log(pathSansBlock)
-        console.log(currBlocks)
-      }
+      var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
+      var newBlockKey;
+      var updatedPath;
 
-      // REVIEW: This is going to be biased against the first block. Conversely, it should probably _never_ pick the first (or last) blocks, as the will be the start/end blocks.
-      var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
+      while (relevantBlocks.length > 0) {
+        var newBlockIdx = Math.floor((relevantBlocks.length) * ExploratoryUtilities.random());
+        newBlockKey = relevantBlocks[newBlockIdx];
 
-      if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
-        currBlocks[newBlockKey] = true;
+        if (graph.serial_board[newBlockKey] === ' ') {
+          currBlocks[newBlockKey] = true;
 
-        var updatedPath = find_pathery_path(graph, currBlocks);
+          updatedPath = find_pathery_path(graph, currBlocks);
 
-        if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
-          delete currBlocks[newBlockKey];
-        } else {
-          return {
-            blockKey: newBlockKey,
-            score: updatedPath.value,
-            solution: currBlocks
+          if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+            delete currBlocks[newBlockKey];
+
+            relevantBlocks.splice(newBlockIdx, 1);
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
           }
         }
       }
-    }
-  }
-} else {
-  // Michael's version
-  placeBlock = function (graph, currBlocks) {
-    var pathSansBlock = find_pathery_path(graph, currBlocks);
-    var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
-    var newBlockKey;
-    var updatedPath;
 
-    while (relevantBlocks.length > 0) {
-      var newBlockIdx = Math.floor((relevantBlocks.length) * Math.random());
-      newBlockKey = relevantBlocks[newBlockIdx];
+      // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
+      // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
+      var maxRandomBlock = graph.m * graph.n - 1;
+      while(true) {
+        newBlockKey = Math.floor(maxRandomBlock * ExploratoryUtilities.random());
 
-      if (graph.serial_board[newBlockKey] === ' ') {
-        currBlocks[newBlockKey] = true;
+        if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+          currBlocks[newBlockKey] = true;
 
-        updatedPath = find_pathery_path(graph, currBlocks);
+          updatedPath = find_pathery_path(graph, currBlocks);
 
-        if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
-          delete currBlocks[newBlockKey];
-
-          relevantBlocks.splice(newBlockIdx, 1);
-        } else {
-          return {
-            blockKey: newBlockKey,
-            score: updatedPath.value,
-            solution: currBlocks
+          if(updatedPath === null || !updatedPath.value) {
+            delete currBlocks[newBlockKey];
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
           }
         }
       }
-    }
+    };
 
-    // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
-    // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
-    var maxRandomBlock = graph.m * graph.n - 1;
-    while(true) {
-      newBlockKey = Math.floor(maxRandomBlock * Math.random());
-
-      if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
-        currBlocks[newBlockKey] = true;
-
-        updatedPath = find_pathery_path(graph, currBlocks);
-
-        if(updatedPath === null || !updatedPath.value) {
-          delete currBlocks[newBlockKey];
-        } else {
-          return {
-            blockKey: newBlockKey,
-            score: updatedPath.value,
-            solution: currBlocks
-          }
-        }
-      }
-    }
-  }
+    break;
+  default:
+    throw new Error();
 }
-
 exports.placeBlock = placeBlock;
 
 function annealingIteration(graph, currBlocks) {
@@ -906,7 +911,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   var possible_next_moves = Object.keys(solution.relevant_blocks)
 
   for (var i = 0; i < possible_next_moves.length; i++) {
-    // if (Math.random() > 0.70){
+    // if (ExploratoryUtilities.random() > 0.70){
     //   continue;
     // }
     var block = possible_next_moves[i]

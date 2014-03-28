@@ -30,7 +30,7 @@ var configuration = {
 
 var getopt = new Getopt([
     // Config file. Should be parsed first.
-    ['', 'config-file=PATH', 'Path to a JSON file with a hash of values which will be merged into configuration. See config/example.json for an example.'],
+    ['', 'config-file=PATH', 'Path to a JSON file with a hash of values which will be merged into configuration. See config/cli.example.json for an example.'],
     // Pathery server options.
     ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + DEFAULT_HOSTNAME + ').'],
     ['', 'port=INT', 'The port for the pathery server (default: ' + DEFAULT_PORT + ').'],

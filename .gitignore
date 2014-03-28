@@ -3,5 +3,5 @@ node_modules
 .*
 queries/cached_queries
 
-# Ignore everything other than config/example.json.
+# Ignore all configuration other than config/cli.example.json and config/exploratory.example.json.
 config/*.json
