@@ -607,11 +607,18 @@ function annealingIteration(graph, currBlocks) {
 
     var path = find_pathery_path(graph, currBlocks)
     var blockScore = path.value;
-    if(!blockScore) { throw new Error('invariant'); }
+
+    // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
+    if(blockScore) {
+      table.push({ weight: Math.round(Math.pow(blockScore, 3)), id: blockKey });
+    }
 
     currBlocks[blockKey] = true;
+  }
 
-    table.push({ weight: Math.round(Math.pow(blockScore, 3)), id: blockKey });
+  if(table.length === 0) {
+    // Presumably this can never happen; minimally we should be able to got back to the previous iteration.
+    throw new Error('invariant');
   }
 
   var blockKeyToRemove = RWC(table);
