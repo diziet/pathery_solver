@@ -599,70 +599,54 @@ function sortByNumber(a, b){
   return (b - a)
 }
 
-function annealingIteration(graph, currBlocks) {
+function removeRandomBlock(graph, currBlocks) {
   var table = [];
-
   for (var blockKey in currBlocks) {
     delete currBlocks[blockKey];
 
     var path = find_pathery_path(graph, currBlocks)
     var blockScore = path.value;
-    if(!blockScore) { throw new Error('invariant'); }
+    if(!blockScore) { 
+      
+      currBlocks[blockKey] = true;
+      continue;
+    }
 
     currBlocks[blockKey] = true;
 
-    table.push({ weight: Math.round(Math.pow(blockScore, 3)), id: blockKey });
+    table.push({ weight: Math.round(Math.pow(blockScore/10, 4)), id: blockKey });
   }
 
   var blockKeyToRemove = RWC(table);
+  // console.log(table)
   delete currBlocks[blockKeyToRemove];
-
+  return blockKeyToRemove
+}
+function annealingIteration(graph, currBlocks) {
+  removeRandomBlock(graph, currBlocks)
   return placeBlock(graph, currBlocks);
 }
 
 exports.annealingIteration = annealingIteration;
 
 function placeBlock(graph, currBlocks) {
-  var pathSansBlock = find_pathery_path(graph, currBlocks);
-  var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
-  var newBlockKey;
-  var updatedPath;
-
-  while (relevantBlocks.length > 0) {
-    var newBlockIdx = Math.floor((relevantBlocks.length) * Math.random());
-    newBlockKey = relevantBlocks[newBlockIdx];
-
-    if (graph.serial_board[newBlockKey] === ' ') {
-      currBlocks[newBlockKey] = true;
-
-      updatedPath = find_pathery_path(graph, currBlocks);
-
-      if(updatedPath === null || !updatedPath.value) {
-        delete currBlocks[newBlockKey];
-
-        relevantBlocks.splice(newBlockIdx, 1);
-      } else {
-        return {
-          blockKey: newBlockKey,
-          score: updatedPath.value,
-          solution: currBlocks
-        }
-      }
+  i = 0
+  while (i < 1000) {
+    i++
+    var pathSansBlock = find_pathery_path(graph, currBlocks);
+    var relevantBlocks = pathSansBlock.paths[0];
+    if (relevantBlocks == [] || relevantBlocks == undefined){
+      console.log(pathSansBlock) 
+      console.log(currBlocks) 
     }
-  }
+    var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
 
-  // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
-  // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
-  var maxRandomBlock = graph.m * graph.n - 1;
-  while(true) {
-    newBlockKey = Math.floor(maxRandomBlock * Math.random());
-
-    if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+    if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
       currBlocks[newBlockKey] = true;
 
-      updatedPath = find_pathery_path(graph, currBlocks);
+      var updatedPath = find_pathery_path(graph, currBlocks);
 
-      if(updatedPath === null || !updatedPath.value) {
+      if(updatedPath.paths == undefined || updatedPath.paths[0] == null) {
         delete currBlocks[newBlockKey];
       } else {
         return {
@@ -676,8 +660,20 @@ function placeBlock(graph, currBlocks) {
 }
 
 exports.placeBlock = placeBlock;
-
-function place_greedy2(board, cur_blocks, depth, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
+function reseedBoard(graph, numBlocks){
+  var currBlocks = {};
+  while (true){
+    for(var i = 0; i < numBlocks; i++) {
+      placeBlock(graph, currBlocks)
+    }
+    if (find_pathery_path(graph, currBlocks).paths[0] != undefined){
+      break
+    }
+    currentBlocks = {};
+  }
+  return currBlocks
+}
+function place_greedy2(board, currBlocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
   if (graph == undefined){
     var graph = new PatheryGraph(board);
   } else{
@@ -690,70 +686,84 @@ function place_greedy2(board, cur_blocks, depth, previous_solution, previous_blo
     blocked_list = []
   }
 
-  var best_val = 0;
-  var best_blocks = [];
-  var current_blocks = graph.dictify_blocks(cur_blocks);
-  var item;
-  var new_block;
-  var score;
-  var path;
-  var relevant_blocks;
-  for (var i = 0; i < 10; i++ ){
-    var table = [];
-    //console.log(i)
-    for (block in current_blocks){
-      delete current_blocks[block]
-      path = find_pathery_path(graph, current_blocks)
-      //  console.log(path)
-      score = path.value
-        // console.log("RELEVANT BLOCKS")
-        // console.log(relevant_blocks)
-      relevant_blocks = path.paths[0]
-      if (isNaN(score) || score == undefined){
-        score = 31
-      }
-      table.push({weight: Math.round(Math.pow(score - 30, 3)), id: block})
-      current_blocks[block] = true;
+  iterations = 0;
+  topScore = 0;
+  while(iterations < 15000) {
+    if(iterations % 15000 == 0) {
+      currBlocks = reseedBoard(graph, total)
+      // console.log("RESEEDING")
+      // console.log(currBlocks)
+      topScore = 0
     }
-    item = RWC(table)
-    // console.log(table)
-    score = find_pathery_path(graph, current_blocks).value
-    if (score >= best_val){
-      best_val = score
-      best_blocks = Object.keys(current_blocks)
-      // console.log(best_blocks)
-      // console.log(score)
-    }
-    delete current_blocks[item]
 
-    while (true) {
-      //console.log("FJIWEF")\
-      if (relevant_blocks == null){
-        new_block = Math.round(graph.n * graph.m * Math.random())
-      } else{
-        index = Math.round((relevant_blocks.length - 1 ) * Math.random())
-        new_block = relevant_blocks[index]
+    var result = annealingIteration(graph, currBlocks);
+    var score = result.score;
+    var prevScore = score
+    if(topScore === null || score > topScore * 0.8) {
+      // console.log("BRUTE FORCING")
+        block1 = removeRandomBlock(graph, currBlocks)
+         block2 = removeRandomBlock(graph, currBlocks)
+        //block3 = removeRandomBlock(graph, currBlocks)
+        //block4 = removeRandomBlock(graph, currBlocks)
+        //block3 = removeRandomBlock(graph, currBlocks)
+        //block4 = removeRandomBlock(graph, currBlocks)
+         // console.log("currBlocks")
+         // console.log(currBlocks)
+
+        solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
+
+        currBlocks = graph.dictify_blocks(solution[0])
+
+        score = solution[1];
+
+      // block1 = removeRandomBlock(graph, currBlocks)
+      // block2 = removeRandomBlock(graph, currBlocks)
+
+      // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
+      // currBlocks = graph.dictify_blocks(solution[0])
+      // block1 = removeRandomBlock(graph, currBlocks)
+      // block2 = removeRandomBlock(graph, currBlocks)
+
+      // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
+
+      // currBlocks = graph.dictify_blocks(solution[0])
+
+      //       block1 = removeRandomBlock(graph, currBlocks)
+      // block2 = removeRandomBlock(graph, currBlocks)
+
+      // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
+
+      // currBlocks = graph.dictify_blocks(solution[0])
+
+
+      if (score > topScore){
+        topScore = score
+        topResult = solution[0].slice(0,9999999);
       }
-      // console.log(keys)
-      // console.log("INDEX")
-      // console.log(index)
-      // console.log(new_block)
-      if (graph.serial_board[new_block] == ' ' && current_blocks[new_block] != true) {
-        current_blocks[new_block] = true
 
-        break;
+      // console.log(currBlocks)
+      // console.log("LISTIFY")
+      // console.log(listified)
+      topScoreHitCount = 1;
+      
+       // currBlocks[block1] = true
+       // currBlocks[block2] = true
+        //currBlocks[block3] = true
+      if (score > 0){
+        console.log("PREV SCORE")
+        console.log(prevScore)
+        console.log("HIGH SCORE")
+        console.log(solution[1])
+        console.log(currBlocks)
+         console.log('new top score', topScore, iterations, currBlocks);
+       console.log('with ' + Object.keys(currBlocks).length + ' keys')
+     
       }
     }
-    //console.log(relevant_blocks)
-    // console.log("NEW BLOCK")
-    // console.log(new_block)
 
-    //console.log("KEYS")
-    // console.log(Object.keys(current_blocks))
+    iterations++;
   }
-  //console.log(best_val)
-  return [best_blocks, best_val]
-  
+  return [topResult]
 }
 
 exports.place_greedy2 = place_greedy2;
@@ -761,7 +771,7 @@ exports.place_greedy2 = place_greedy2;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
-function place_greedy(board, cur_blocks, depth, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
+function place_greedy(board, cur_blocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
   //console.log("PLACE GREEDY!!!" )
   //console.log("DEPTH: " + depth)
   if (graph == undefined){
@@ -884,12 +894,14 @@ function place_greedy(board, cur_blocks, depth, previous_solution, previous_bloc
     already_tried_combination[string_representation] = 1
 
 
-    var response = place_greedy(board, temp_blocks, depth -1, solution.paths[0], block, blocked_list, graph, already_tried_combination)
+    var response = place_greedy(board, temp_blocks, depth -1, total ,solution.paths[0], block, blocked_list, graph, already_tried_combination)
     var possible_blocks = response[0]
     var val = response[1]
 
     // determine the best combination based on the score
     if (val > best_val){
+      // console.log("LFJEWOIFEWJOI")
+      // console.log(best_blocks)
       best_blocks = possible_blocks
       best_val = val
     }

@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////
 // SERVER ONLY
 /////////////////////////////////////////////////////
-DEPTH_CONSTANT = 2
+DEPTH_CONSTANT = 3
 var express = require('express');
 var Analyst = require('./src/analyst.js');
 
@@ -25,6 +25,7 @@ app.post('/place_greedy', middleware, function(req, res){
   console.log("\nPLACE GREEDY:")
   var t = new Date().getTime();
   remaining = JSON.parse(req.param('remaining'));
+  wallTotal = JSON.parse(req.param('total'));
   if (remaining > DEPTH_CONSTANT  ) {
     remaining = DEPTH_CONSTANT
   }
@@ -42,7 +43,9 @@ app.post('/place_greedy', middleware, function(req, res){
 
   console.log("KEYED SOLUTION")
   console.log(keyed_solution)
-  var result = Analyst.place_greedy2(board, keyed_solution, remaining);
+  console.log("WALLS TOTAL")
+  console.log(wallTotal)
+  var result = Analyst.place_greedy2(board, solution, remaining, wallTotal);
   console.log("ms elapsed: " , new Date().getTime() - t)
   console.log("FINAL RESULT:" + result[0])
   console.log("FINAL RESULT SCORE:" + result[1])
@@ -51,10 +54,9 @@ app.post('/place_greedy', middleware, function(req, res){
   for (i in best_blocks){
     unkeyed_blocks.push(graph.unkeyify(best_blocks[i]))
   }
-  //console.log("UNKEYED")
-  //console.log(best_blocks)
-  //console.log(unkeyed_blocks)
-  res.json(unkeyed_blocks);
+  console.log("UNKEYED")
+  console.log(best_blocks)
+  res.json(best_blocks);
 });
 
 app.post('/improve_solution', middleware, function(req, res){
