@@ -606,53 +606,112 @@ function removeRandomBlock(graph, currBlocks) {
 
     var path = find_pathery_path(graph, currBlocks)
     var blockScore = path.value;
-    if(!blockScore) { 
-      
-      currBlocks[blockKey] = true;
-      continue;
+
+    // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
+    if(blockScore) {
+      table.push({ weight: Math.round(Math.pow(blockScore / 10, 4)), id: blockKey });
     }
 
     currBlocks[blockKey] = true;
+  }
 
-    table.push({ weight: Math.round(Math.pow(blockScore/10, 4)), id: blockKey });
+  if(table.length === 0) {
+    // Presumably this can never happen; minimally we should be able to got back to the previous iteration.
+    throw new Error('invariant');
   }
 
   var blockKeyToRemove = RWC(table);
-  // console.log(table)
+
   delete currBlocks[blockKeyToRemove];
-  return blockKeyToRemove
-}
-function annealingIteration(graph, currBlocks) {
-  removeRandomBlock(graph, currBlocks)
-  return placeBlock(graph, currBlocks);
+
+  return blockKeyToRemove;
 }
 
-exports.annealingIteration = annealingIteration;
+var placeBlock;
 
-function placeBlock(graph, currBlocks) {
-  i = 0
-  while (i < 1000) {
-    i++
-    var pathSansBlock = find_pathery_path(graph, currBlocks);
-    var relevantBlocks = pathSansBlock.paths[0];
-    if (relevantBlocks == [] || relevantBlocks == undefined){
-      console.log(pathSansBlock) 
-      console.log(currBlocks) 
+if(process.env['USE_MICHAELS_PLACE_BLOCK'] !== '1') {
+  // Oliver's version
+  placeBlock = function (graph, currBlocks) {
+    var i = 0;
+    while (i < 1000) {
+      i++;
+      var pathSansBlock = find_pathery_path(graph, currBlocks);
+      var relevantBlocks = pathSansBlock.paths[0];
+      if (relevantBlocks == [] || relevantBlocks == undefined){
+        console.log(pathSansBlock)
+        console.log(currBlocks)
+      }
+
+      // REVIEW: This is going to be biased against the first block. Conversely, it should probably _never_ pick the first (or last) blocks, as the will be the start/end blocks.
+      var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
+
+      if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
+        currBlocks[newBlockKey] = true;
+
+        var updatedPath = find_pathery_path(graph, currBlocks);
+
+        if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+          delete currBlocks[newBlockKey];
+        } else {
+          return {
+            blockKey: newBlockKey,
+            score: updatedPath.value,
+            solution: currBlocks
+          }
+        }
+      }
     }
-    var newBlockKey = relevantBlocks[Math.round((relevantBlocks.length - 1 ) * Math.random())];
+  }
+} else {
+  // Michael's version
+  placeBlock = function (graph, currBlocks) {
+    var pathSansBlock = find_pathery_path(graph, currBlocks);
+    var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
+    var newBlockKey;
+    var updatedPath;
 
-    if (graph.serial_board[newBlockKey] === ' ' && currBlocks[newBlockKey] !== true) {
-      currBlocks[newBlockKey] = true;
+    while (relevantBlocks.length > 0) {
+      var newBlockIdx = Math.floor((relevantBlocks.length) * Math.random());
+      newBlockKey = relevantBlocks[newBlockIdx];
 
-      var updatedPath = find_pathery_path(graph, currBlocks);
+      if (graph.serial_board[newBlockKey] === ' ') {
+        currBlocks[newBlockKey] = true;
 
-      if(updatedPath.paths == undefined || updatedPath.paths[0] == null) {
-        delete currBlocks[newBlockKey];
-      } else {
-        return {
-          blockKey: newBlockKey,
-          score: updatedPath.value,
-          solution: currBlocks
+        updatedPath = find_pathery_path(graph, currBlocks);
+
+        if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+          delete currBlocks[newBlockKey];
+
+          relevantBlocks.splice(newBlockIdx, 1);
+        } else {
+          return {
+            blockKey: newBlockKey,
+            score: updatedPath.value,
+            solution: currBlocks
+          }
+        }
+      }
+    }
+
+    // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
+    // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
+    var maxRandomBlock = graph.m * graph.n - 1;
+    while(true) {
+      newBlockKey = Math.floor(maxRandomBlock * Math.random());
+
+      if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+        currBlocks[newBlockKey] = true;
+
+        updatedPath = find_pathery_path(graph, currBlocks);
+
+        if(updatedPath === null || !updatedPath.value) {
+          delete currBlocks[newBlockKey];
+        } else {
+          return {
+            blockKey: newBlockKey,
+            score: updatedPath.value,
+            solution: currBlocks
+          }
         }
       }
     }
@@ -660,19 +719,31 @@ function placeBlock(graph, currBlocks) {
 }
 
 exports.placeBlock = placeBlock;
+
+function annealingIteration(graph, currBlocks) {
+  removeRandomBlock(graph, currBlocks);
+  return placeBlock(graph, currBlocks);
+}
+exports.annealingIteration = annealingIteration;
+
 function reseedBoard(graph, numBlocks){
   var currBlocks = {};
+
   while (true){
     for(var i = 0; i < numBlocks; i++) {
-      placeBlock(graph, currBlocks)
+      placeBlock(graph, currBlocks);
     }
     if (find_pathery_path(graph, currBlocks).paths[0] != undefined){
       break
     }
+
+    // REVIEW: This has to be a typo.
     currentBlocks = {};
   }
-  return currBlocks
+
+  return currBlocks;
 }
+
 function place_greedy2(board, currBlocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
   if (graph == undefined){
     var graph = new PatheryGraph(board);

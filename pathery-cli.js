@@ -255,7 +255,6 @@ function executeMapCommand(client, commandParameters, configuration) {
 ////////////////////////////////////////////////////////////////////////////////
 // General functionality.
 
-// FIXME: Fails on map 4519.
 /**
  *
  * @param {PatheryAPI.Client} client
