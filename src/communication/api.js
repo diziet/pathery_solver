@@ -1,6 +1,8 @@
 /** @module pathery/communication/api */
 
 var http = require('http');
+var QueryString = require('querystring');
+
 var Q = require('q');
 
 var Map = require(__dirname + '/../map.js');
@@ -54,20 +56,20 @@ module.exports.Client.prototype.getMapIdsByDate = function (date) {
  * @returns {Q.Promise}
  */
 module.exports.Client.prototype.postSolution = function (map, solution) {
-  var params = [
-    'isChallenge=false',
-    'r=getpath',
-    'mapcode=' + map.code,
-    'mapid=' + map.id,
-    'solution=' + solution.reduce(
+  var params = {
+    isChallenge: false,
+    r: 'getpath',
+    mapcode: map.code,
+    mapid: map.id,
+    solution: solution.reduce(
         function (memo, currCell) {
           return memo + (currCell[0] + 1) + ',' + currCell[1] + '.';
         },
         '.'
     )
-  ];
+  };
 
-  return this.post('/do.php?' + params.join('&'), { doAuthenticate: true });
+  return this.post('/do.php?' + QueryString.stringify(params), { doAuthenticate: true });
 };
 
 /**
