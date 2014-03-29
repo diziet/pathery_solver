@@ -1,5 +1,16 @@
 /** @module pathery */
 
+//
+// TODO: Support configuring exhaustiveSearchDepth, probably via ExploratoryUtilities.
+// TODO: Make this more extensible, particularly w.r.t. DelayTopScoreNotification and ExhaustiveScoreProcessing...maybe use mixins?
+// FIXME: Reaching the optimal score via ExhaustiveScoreProcessing will not stop the workers until one of the workers gets a new top score.
+// TODO: Fully iterate through all map.walls Choose exhaustiveSearchDepth possible removed walls?
+// TODO: Timeout the exhaustive search after some period of time?
+// TODO:     Additionally -- lower the depth is too many timeouts?
+//
+
+var Analyst = require(__dirname + '/analyst.js');
+
 /**
  *
  * @param {Client} client
@@ -42,6 +53,8 @@ module.exports = function (client, map, configuration) {
   // End (general) attribute initialization.
 
   this.initializeDelayTopScoreNotification();
+
+  this.initializeExhaustiveScoreProcessing();
 };
 
 /**
@@ -92,6 +105,63 @@ module.exports.prototype.initializeDelayTopScoreNotification = function () {
 };
 
 /**
+ *
+ * @private
+ */
+module.exports.prototype.initializeExhaustiveScoreProcessing = function () {
+  this.exhaustiveSearchDepth = 3;
+};
+
+
+/**
+ * N.B.: This is currently running in the main process (i.e. _not_ in any of the workers). As a result, the new
+ *     solutions are never fed back into the annealing search.
+ *
+ * @param currBlocks
+ */
+module.exports.prototype.exhaustiveSearchTopScore = function (currBlocks) {
+  var exhaustiveSearchDepth = this.exhaustiveSearchDepth;
+
+  if(exhaustiveSearchDepth > 0 && !this.isOptimal()) {
+    var scoreForCurrBlocks = this.topScore;
+    var self = this;
+
+    setImmediate(doExhaustiveSearchTopScore);
+
+    function doExhaustiveSearchTopScore() {
+      if(self.topScore === scoreForCurrBlocks) {
+        var map = self.map;
+        var graph = map.graph();
+
+        console.log('doing exhaustive on ' + scoreForCurrBlocks);
+
+        for(var i = 0; i < exhaustiveSearchDepth; i++) {
+          Analyst.removeRandomBlock(graph, currBlocks);
+        }
+
+        var exhaustiveSearchStartTime = Date.now();
+        var solution = Analyst.place_greedy(map.board, graph.listify_blocks(currBlocks), exhaustiveSearchDepth);
+        var exhaustiveSearchRunTime = Date.now() - exhaustiveSearchStartTime;
+        var newScore = solution[1];
+
+        if(newScore > self.topScore) {
+          console.log('exhaustive search generated a new top score: ' + newScore + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
+
+          self.registerResult({
+            score: newScore,
+            solution: graph.dictify_blocks(solution[0])
+          });
+        } else {
+          console.log('exhaustive search generated an irrelevant score: ' + newScore + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
+        }
+      } else {
+        console.log('skipping exhaustive on ' + scoreForCurrBlocks);
+      }
+    }
+  }
+};
+
+/**
  * Call to signal that a new top score has been registered.
  *
  * @private
@@ -119,4 +189,6 @@ module.exports.prototype.onNewTopScore = function (rawSolution) {
         }
     );
   }
+
+  this.exhaustiveSearchTopScore(rawSolution);
 };

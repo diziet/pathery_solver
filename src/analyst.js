@@ -636,7 +636,7 @@ function removeRandomBlock(graph, currBlocks) {
   for (var blockKey in currBlocks) {
     delete currBlocks[blockKey];
 
-    var path = find_pathery_path(graph, currBlocks)
+    var path = find_pathery_path(graph, currBlocks);
     var blockScore = path.value;
 
     // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
@@ -648,7 +648,7 @@ function removeRandomBlock(graph, currBlocks) {
   }
 
   if(table.length === 0) {
-    // Presumably this can never happen; minimally we should be able to got back to the previous iteration.
+    // Presumably this can never happen; minimally we should be able to go back to the previous iteration.
     throw new Error('invariant');
   }
 
@@ -658,6 +658,7 @@ function removeRandomBlock(graph, currBlocks) {
 
   return blockKeyToRemove;
 }
+exports.removeRandomBlock = removeRandomBlock;
 
 var placeBlock;
 switch(ExploratoryUtilities.configuration.placeBlockVersion) {
