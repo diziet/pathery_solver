@@ -76,6 +76,60 @@ module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
 
 /**
  *
+ * @readonly
+ * @enum {number}
+ */
+module.exports.Client.MapDifficulty = {
+  SIMPLE: 0,
+  NORMAL: 1,
+  COMPLEX: 2,
+  SPECIAL: 3,
+  ULTRA_COMPLEX: 4
+};
+
+/**
+ *
+ * @constructor
+ * @augments Error
+ */
+module.exports.Client.MapsNotGenerated = function () {
+  this.message = 'maps not generated';
+  this.name = 'MapsNotGenerated';
+  this.stack = (new Error()).stack;
+};
+module.exports.Client.MapsNotGenerated.prototype = new Error;
+module.exports.Client.MapsNotGenerated.prototype.constructor = module.exports.Client.MapsNotGenerated;
+
+/**
+ *
+ * @param {Date} date
+ * @param {Client.MapDifficulty} difficulty
+ * @param {Object} options - passed to #getMapIdsByDate (though _not_ #getMap).
+ * @returns {Q.Promise} Results with a Map object on success. May fail with a MapsNotGenerated error if the specified difficulty is not yet available.
+ */
+module.exports.Client.prototype.getMapByDateAndDifficulty = function (date, difficulty, options) {
+  var klass = Object.getPrototypeOf(this).constructor;
+  var self = this;
+
+  return this.getMapIdsByDate(date, options).then(function (mapIds) {
+    if(mapIds === null) {
+      throw new klass.MapsNotGenerated();
+    } else if(mapIds.length === 1 ) {
+      if(difficulty === klass.MapDifficulty.ULTRA_COMPLEX) {
+        return self.getMap(mapIds[0]);
+      } else {
+        throw new klass.MapsNotGenerated();
+      }
+    } else if(mapIds.length < Object.keys(klass.MapDifficulty).length) {
+      throw new Error('bad mapIds: ' + JSON.stringify(mapIds));
+    } else {
+      return self.getMap(mapIds[difficulty]);
+    }
+  });
+};
+
+/**
+ *
  * @param {Map} map
  * @param {Array} solution
  * @returns {Q.Promise}
