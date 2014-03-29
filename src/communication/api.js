@@ -10,6 +10,57 @@ var Map = require(__dirname + '/../map.js');
 
 /**
  *
+ * @readonly
+ * @enum {number}
+ */
+module.exports.MapDifficulty = {
+  SIMPLE: 0,
+  NORMAL: 1,
+  COMPLEX: 2,
+  SPECIAL: 3,
+  ULTRA_COMPLEX: 4
+};
+
+/**
+ * Thrown when an issue occurs w.r.t. API communication.
+ *
+ * @constructor
+ * @augments Error
+ *
+ * @param {http.IncomingMessage} response
+ * @param {String} body
+ * @param {Error} [innerException]
+ */
+module.exports.APIError = function (response, body, innerException) {
+  /** @member {http.IncomingMessage} */
+  this.response = response;
+  /** @member {String} */
+  this.body = body;
+  /** @member {Error} */
+  this.innerException = innerException;
+
+  this.message = 'There was an error communicating with the API: ' + response.statusCode;
+  this.name = 'APIError';
+  this.stack = (new Error()).stack;
+};
+module.exports.APIError.prototype = new Error;
+module.exports.APIError.prototype.constructor = module.exports.APIError;
+
+/**
+ *
+ * @constructor
+ * @augments Error
+ */
+module.exports.MapsNotGenerated = function () {
+  this.message = 'Maps not generated';
+  this.name = 'MapsNotGenerated';
+  this.stack = (new Error()).stack;
+};
+module.exports.MapsNotGenerated.prototype = new Error;
+module.exports.MapsNotGenerated.prototype.constructor = module.exports.MapsNotGenerated;
+
+/**
+ *
  * @param {Object} [attributes]
  * @constructor
  */
@@ -42,7 +93,7 @@ module.exports.Client.DEFAULT_PORT = 80;
  *
  * @param {Number} mapId
  * @param {{preventCaching: Boolean}} [options]
- * @returns {Q.Promise} Resolves with a Map object.
+ * @returns {Q.Promise} Resolves with a Map object. May fail with an APIError error if the specified map does not exist (with APIError#response.statusCode == 404).
  */
 module.exports.Client.prototype.getMap = function (mapId, options) {
   var requestPath = '/a/map/' + mapId + '.js';
@@ -76,51 +127,24 @@ module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
 
 /**
  *
- * @readonly
- * @enum {number}
- */
-module.exports.Client.MapDifficulty = {
-  SIMPLE: 0,
-  NORMAL: 1,
-  COMPLEX: 2,
-  SPECIAL: 3,
-  ULTRA_COMPLEX: 4
-};
-
-/**
- *
- * @constructor
- * @augments Error
- */
-module.exports.Client.MapsNotGenerated = function () {
-  this.message = 'maps not generated';
-  this.name = 'MapsNotGenerated';
-  this.stack = (new Error()).stack;
-};
-module.exports.Client.MapsNotGenerated.prototype = new Error;
-module.exports.Client.MapsNotGenerated.prototype.constructor = module.exports.Client.MapsNotGenerated;
-
-/**
- *
  * @param {Date} date
- * @param {Client.MapDifficulty} difficulty
+ * @param {MapDifficulty} difficulty
  * @param {Object} options - passed to #getMapIdsByDate (though _not_ #getMap).
  * @returns {Q.Promise} Results with a Map object on success. May fail with a MapsNotGenerated error if the specified difficulty is not yet available.
  */
 module.exports.Client.prototype.getMapByDateAndDifficulty = function (date, difficulty, options) {
-  var klass = Object.getPrototypeOf(this).constructor;
   var self = this;
 
   return this.getMapIdsByDate(date, options).then(function (mapIds) {
     if(mapIds === null) {
-      throw new klass.MapsNotGenerated();
+      throw new module.exports.MapsNotGenerated();
     } else if(mapIds.length === 1 ) {
-      if(difficulty === klass.MapDifficulty.ULTRA_COMPLEX) {
+      if(difficulty === module.exports.MapDifficulty.ULTRA_COMPLEX) {
         return self.getMap(mapIds[0]);
       } else {
-        throw new klass.MapsNotGenerated();
+        throw new module.exports.MapsNotGenerated();
       }
-    } else if(mapIds.length < Object.keys(klass.MapDifficulty).length) {
+    } else if(mapIds.length < Object.keys(module.exports.MapDifficulty).length) {
       throw new Error('bad mapIds: ' + JSON.stringify(mapIds));
     } else {
       return self.getMap(mapIds[difficulty]);
@@ -213,10 +237,10 @@ module.exports.Client.prototype.getJSON = function (path, options) {
             try {
               deferred.resolve(JSON.parse(buffer));
             } catch(e) {
-              deferred.reject({ response: response, body: buffer });
+              deferred.reject(new module.exports.APIError(response, buffer, e));
             }
           } else {
-            deferred.reject({ response: response, body: buffer });
+            deferred.reject(new module.exports.APIError(response, buffer));
           }
         });
       }
@@ -262,13 +286,9 @@ module.exports.Client.prototype.post = function (path, options) {
 
         response.on('end', function() {
           if(response.statusCode === 200 || response.statusCode === 302) {
-            try {
-              deferred.resolve(buffer);
-            } catch(e) {
-              deferred.reject({ response: response, body: buffer });
-            }
+            deferred.resolve(buffer);
           } else {
-            deferred.reject({ response: response, body: buffer });
+            deferred.reject(new module.exports.APIError(response, buffer));
           }
         });
       }

@@ -174,7 +174,7 @@ module.exports.prototype.onNewTopScore = function (rawSolution) {
   }
 
   if(this.postResults) {
-    this.client.postSolution(this.map, solution).then(
+    this.client.postSolution(this.map, solution).done(
         function (responseBody) {
           console.log(responseBody);
         },

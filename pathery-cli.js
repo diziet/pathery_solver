@@ -230,7 +230,7 @@ function executeMapCommand(client, commandParameters, configuration) {
    * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
    */
   function doGetMapAndSolve(wasNotDelayed) {
-    client.getMap(mapId, { preventCaching: !wasNotDelayed }).then(
+    client.getMap(mapId, { preventCaching: !wasNotDelayed }).done(
         function (map) {
           if(!wasNotDelayed) {
             console.log('Successfully retrieved map at', new Date());
@@ -239,18 +239,16 @@ function executeMapCommand(client, commandParameters, configuration) {
           solveMap(client, map, configuration);
         },
         function (error) {
-          var response = error.response;
-
-          if(response) {
-            if(response.statusCode === 404 && configuration.retryOnNotFoundDelay) {
+          if(error instanceof PatheryAPI.APIError) {
+            if(error.response.statusCode === 404 && configuration.retryOnNotFoundDelay) {
               console.log('map ' + mapId + ' not found -- retrying in ' + configuration.retryOnNotFoundDelay + ' seconds');
 
               setTimeout(doGetMapAndSolve, configuration.retryOnNotFoundDelay * 1000);
             } else {
-              console.error('failed to get map ' + mapId + ': ' + response.statusCode + ' - "' + error.body + '"');
+              console.error('failed to get map ' + mapId + ': ' + error.response.statusCode + ' - "' + error.body + '"');
             }
           } else {
-            console.error(error);
+            throw error;
           }
         }
     );

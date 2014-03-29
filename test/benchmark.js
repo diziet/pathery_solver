@@ -91,7 +91,7 @@ if(configurationAttributeToBenchmarkDomain.length === 0) {
  */
 var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomain.map(function (versionToBenchmark) { return JSON.stringify(versionToBenchmark); });
 
-(new PatheryAPI.Client()).getMap(mapId).then(
+(new PatheryAPI.Client()).getMap(mapId).done(
     function (map) {
       /**
        * Array of parameters which traverse for each value in initialJsonifiedVersionsToBenchmark.
@@ -221,8 +221,5 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
 
         (benchmarkResults[jsonifiedVersionToBenchmark] || (benchmarkResults[jsonifiedVersionToBenchmark] = [])).push(runTime);
       }
-    },
-    function (error) {
-      console.error(error);
     }
 );
