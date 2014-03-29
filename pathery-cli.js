@@ -51,7 +51,7 @@ var getopt = new Getopt([
 
 getopt.bindHelp();
 getopt.setHelp(
-    'Usage: node pathery-cli.js [OPTIONS] map <mapID>\n' +
+    'Usage: node pathery-cli.js [OPTIONS] map-by-id <MAP_ID>\n' +
         '\n' +
         '[[OPTIONS]]'
 );
@@ -198,8 +198,8 @@ function doRouteCommand(wasNotDelayed) {
   }
 
   switch(command) {
-    case 'map':
-      executeMapCommand(client, commandParameters, configuration);
+    case 'map-by-id':
+      executeMapByIdCommand(client, commandParameters, configuration);
 
       break;
     default:
@@ -212,11 +212,11 @@ function doRouteCommand(wasNotDelayed) {
 ////////////////////////////////////////////////////////////////////////////////
 // Command-specific logic.
 
-function executeMapCommand(client, commandParameters, configuration) {
+function executeMapByIdCommand(client, commandParameters, configuration) {
   var mapId = parseInt(commandParameters[0]);
 
   if(!mapId) {
-    console.errors('Bad mapId.');
+    console.errors('Bad MAP_ID.');
 
     process.exit(3);
   }
