@@ -58,14 +58,20 @@ module.exports.Client.prototype.getMap = function (mapId, options) {
 };
 
 /**
- * N.B.: This appears to update late (possibly due to intermediate caching). If the preventDelayed option works for
- *     #getMap, it will likely work here as well.
  *
  * @param {Date} date
+ * @param {{preventCaching: Boolean}} [options]
  * @returns {Q.Promise}
  */
-module.exports.Client.prototype.getMapIdsByDate = function (date) {
-  return this.getJSON('/a/mapsbydate/' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + '.js');
+module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
+  var requestPath = '/a/mapsbydate/' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + '.js';
+
+  // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
+  if(options && options.preventCaching) {
+    requestPath += '?' + Date.now();
+  }
+
+  return this.getJSON(requestPath);
 };
 
 /**
