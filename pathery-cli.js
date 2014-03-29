@@ -20,6 +20,7 @@ var configuration = {
   hostname: DEFAULT_HOSTNAME,
   port: DEFAULT_PORT,
   optimalScore: null,
+  printResults: true,
   workerCount: 1,
   startAt: null,
   retryOnNotFoundDelay: null,
@@ -36,6 +37,7 @@ var getopt = new Getopt([
     ['', 'port=INT', 'The port for the pathery server (default: ' + DEFAULT_PORT + ').'],
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
+    ['', 'no-print-results', 'Do not print top results.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
     // Retry and timing options.
     ['', 'start-at=DATE', 'Wait until the specified date/time to start running, e.g. "2014-03-01 23:59:30", (optional).'],
@@ -92,6 +94,10 @@ if(options.hasOwnProperty('optimal-score')) {
 
     process.exit(2);
   }
+}
+
+if(options.hasOwnProperty('no-print-results')) {
+  configuration.printResults = !options['no-print-results'];
 }
 
 if(options.hasOwnProperty('workers')) {

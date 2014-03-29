@@ -26,6 +26,9 @@ module.exports = function (client, map, configuration) {
   /** @member {Boolean} */
   this.postResults = configuration.postResults;
 
+  /** @member {Boolean} */
+  this.printResults = configuration.printResults;
+
   ////////////////////
   // Local attributes.
 
@@ -96,7 +99,9 @@ module.exports.prototype.initializeDelayTopScoreNotification = function () {
 module.exports.prototype.onNewTopScore = function (rawSolution) {
   var solution = this.map.graph().listify_blocks(rawSolution);
 
-  console.log('New top score: ' + this.topScore + ' reached after ' + ((Date.now() - this.startTime.getTime()) / 1000) + ' seconds. Solution:', solution);
+  if(this.printResults) {
+    console.log('New top score: ' + this.topScore + ' reached after ' + ((Date.now() - this.startTime.getTime()) / 1000) + ' seconds. Solution: ' + JSON.stringify(solution));
+  }
 
   if(this.postResults) {
     this.client.postSolution(this.map, solution).then(
