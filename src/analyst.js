@@ -505,6 +505,8 @@ function find_pathery_path(graph, blocks, previous_solution, last_block_placed){
           relevant_blocks: relevant_blocks};
 }
 
+exports.find_pathery_path = find_pathery_path;
+
 
 function compute_solution(board, cur_blocks, previous_solution, cb) {
   console.log("COMPUTE SOLUTION")
