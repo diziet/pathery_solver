@@ -51,13 +51,13 @@ module.exports.APIError.prototype.constructor = module.exports.APIError;
  * @constructor
  * @augments Error
  */
-module.exports.MapsNotGenerated = function () {
+module.exports.MapNotGenerated = function () {
   this.message = 'Maps not generated';
-  this.name = 'MapsNotGenerated';
+  this.name = 'MapNotGenerated';
   this.stack = (new Error()).stack;
 };
-module.exports.MapsNotGenerated.prototype = new Error;
-module.exports.MapsNotGenerated.prototype.constructor = module.exports.MapsNotGenerated;
+module.exports.MapNotGenerated.prototype = new Error;
+module.exports.MapNotGenerated.prototype.constructor = module.exports.MapNotGenerated;
 
 /**
  *
@@ -129,25 +129,25 @@ module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
  *
  * @param {Date} date
  * @param {MapDifficulty} difficulty
- * @param {Object} options - passed to #getMapIdsByDate (though _not_ #getMap).
- * @returns {Q.Promise} Results with a Map object on success. May fail with a MapsNotGenerated error if the specified difficulty is not yet available.
+ * @param {Object} options - passed to #getMap and #getMapIdsByDate.
+ * @returns {Q.Promise} Results with a Map object on success. May fail with a MapNotGenerated error if the specified difficulty is not yet available.
  */
 module.exports.Client.prototype.getMapByDateAndDifficulty = function (date, difficulty, options) {
   var self = this;
 
   return this.getMapIdsByDate(date, options).then(function (mapIds) {
     if(mapIds === null) {
-      throw new module.exports.MapsNotGenerated();
+      throw new module.exports.MapNotGenerated();
     } else if(mapIds.length === 1 ) {
       if(difficulty === module.exports.MapDifficulty.ULTRA_COMPLEX) {
-        return self.getMap(mapIds[0]);
+        return self.getMap(mapIds[0], options);
       } else {
-        throw new module.exports.MapsNotGenerated();
+        throw new module.exports.MapNotGenerated();
       }
     } else if(mapIds.length < Object.keys(module.exports.MapDifficulty).length) {
       throw new Error('bad mapIds: ' + JSON.stringify(mapIds));
     } else {
-      return self.getMap(mapIds[difficulty]);
+      return self.getMap(mapIds[difficulty], options);
     }
   });
 };
