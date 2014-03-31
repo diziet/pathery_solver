@@ -10,6 +10,7 @@
 //
 
 var Analyst = require(__dirname + '/analyst.js');
+var ExploratoryUtilities = require(__dirname + '/exploratory-utilities.js');
 
 /**
  *
@@ -109,7 +110,7 @@ module.exports.prototype.initializeDelayTopScoreNotification = function () {
  * @private
  */
 module.exports.prototype.initializeExhaustiveScoreProcessing = function () {
-  this.exhaustiveSearchDepth = 3;
+  this.exhaustiveSearchDepth = 2;
 };
 
 
@@ -126,7 +127,7 @@ module.exports.prototype.exhaustiveSearchTopScore = function (currBlocks) {
     var scoreForCurrBlocks = this.topScore;
     var self = this;
 
-    setImmediate(doExhaustiveSearchTopScore);
+    setTimeout(doExhaustiveSearchTopScore, 1000);
 
     function doExhaustiveSearchTopScore() {
       if(self.topScore === scoreForCurrBlocks) {
@@ -135,29 +136,85 @@ module.exports.prototype.exhaustiveSearchTopScore = function (currBlocks) {
 
         console.log('doing exhaustive on ' + scoreForCurrBlocks);
 
-        for(var i = 0; i < exhaustiveSearchDepth; i++) {
-          Analyst.removeRandomBlock(graph, currBlocks);
-        }
-
         var exhaustiveSearchStartTime = Date.now();
-        var solution = Analyst.place_greedy(map.board, graph.listify_blocks(currBlocks), exhaustiveSearchDepth);
+        var exhaustiveSearchRes = performExhaustiveSearch(map, graph, currBlocks, exhaustiveSearchDepth);
         var exhaustiveSearchRunTime = Date.now() - exhaustiveSearchStartTime;
-        var newScore = solution[1];
 
-        if(newScore > self.topScore) {
-          console.log('exhaustive search generated a new top score: ' + newScore + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
+        if(exhaustiveSearchRes.score > self.topScore) {
+          console.log('exhaustive search generated a new top score: ' + exhaustiveSearchRes.score + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
 
           self.registerResult({
-            score: newScore,
-            solution: graph.dictify_blocks(solution[0])
+            score: exhaustiveSearchRes.score,
+            solution: graph.dictify_blocks(exhaustiveSearchRes.solution)
           });
         } else {
-          console.log('exhaustive search generated an irrelevant score: ' + newScore + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
+          console.log('exhaustive search generated an irrelevant score: ' + exhaustiveSearchRes.score + '  in ' + exhaustiveSearchRunTime + ' milliseconds');
         }
       } else {
         console.log('skipping exhaustive on ' + scoreForCurrBlocks);
       }
     }
+  }
+
+  ////////////////////
+  // Helper functions.
+
+  var performExhaustiveSearch;
+
+  switch(ExploratoryUtilities.configuration.exhaustiveSearchDomain) {
+    case 'combinatorial':
+      performExhaustiveSearch = function(map, graph, currBlocks, exhaustiveSearchDepth) {
+        var blockKeys = Object.keys(currBlocks);
+        var exhaustiveBestScore = null;
+        var exhaustiveBestSolution = null;
+
+        function combinatorialHelper(depth, idxStart) {
+          for(var idx = idxStart; idx < blockKeys.length; idx++) {
+            delete currBlocks[blockKeys[idx]];
+
+            if(depth === 1) {
+              var solution = Analyst.place_greedy(map.board, graph.listify_blocks(currBlocks), exhaustiveSearchDepth);
+              var currScore = solution[1];
+              var currSolution = solution[0];
+
+              if(exhaustiveBestScore === null || currScore > exhaustiveBestScore) {
+                exhaustiveBestScore = currScore;
+                exhaustiveBestSolution = currSolution;
+              }
+            } else {
+              combinatorialHelper(depth - 1, idx + 1);
+            }
+
+            currBlocks[blockKeys[idx]] = true;
+          }
+        }
+
+        combinatorialHelper(exhaustiveSearchDepth, 0);
+
+        return {
+          score: exhaustiveBestScore,
+          solution: exhaustiveBestSolution
+        };
+      };
+
+      break;
+    case 'random':
+      performExhaustiveSearch = function(map, graph, currBlocks, exhaustiveSearchDepth) {
+        for(var i = 0; i < exhaustiveSearchDepth; i++) {
+          Analyst.removeRandomBlock(graph, currBlocks);
+        }
+
+        var solution = Analyst.place_greedy(map.board, graph.listify_blocks(currBlocks), exhaustiveSearchDepth);
+
+        return {
+          score: solution[1],
+          solution: solution[0]
+        };
+      };
+
+      break;
+    default:
+      throw new Error('invariant');
   }
 };
 
