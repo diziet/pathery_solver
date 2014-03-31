@@ -345,75 +345,34 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
       target_dict[target] = true;
 
     }
-    //console.log("TARGETS")
-    //console.log(targets)
 
-     //console.log("last_block_placed");
-     //console.log(last_block_placed);
-
-    //console.log(graph.unkeyify(last_block_placed));
-    //var shortcut_ever = false
-    // if (last_block_placed == block_in_question){
-
-    //   shortcut_ever = true
-    //   console.log("PREVIOUS SOLUTION")
-    //   for (iii = 0; iii < previous_solution.length; iii++){
-    //     console.log(graph.unkeyify(previous_solution[iii]))
-    //   }
-    //   //console.log(previous_solution);
-    //   console.log("_____________________")
-    //   console.log("BEGIN")
-    //   console.log(cur)
-    //   console.log("current full path");
-    //   console.log(fullpath)
-    //   console.log("TARGETS")
-    //   console.log(target_dict);
-    //   console.log("LOOP")
-    // }
-    var shortcut = false
 
     // Traverse through the previous solution.  If the previous solution 
     // never hits the block just placed, then don't recalculate the BFS 
     // and just use the previous version
-    for (var ii = 0, q = previous_solution.length; ii < q; ii++){
-      //console.log("within loop")
-      //console.log(previous_solution.length)
-      //console.log(previous_solution)
-      // if (last_block_placed == block_in_question){
-      //   console.log(ii)
-      //   console.log(ii)
-      //   console.log(graph.unkeyify(previous_solution[ii]))
-      // }
-      //console.log(previous_solution[ii])
-      block = previous_solution[ii]
-      if (block == last_block_placed) {
-        shortcut = false
-        break;
-      }
-      if (target_dict[block] == true){
 
-        //console.log("DOING SHORTCUT!")
-         //console.log("DOING SHORTCUT!")
-        shortcut = previous_solution.slice(0, ii + 1)
-        previous_solution = previous_solution.slice(ii+1, previous_solution.length)
-        break;
+    if (!graph.has_teleports){
+      var shortcut = false
+      for (var ii = 0, q = previous_solution.length; ii < q; ii++){
+        block = previous_solution[ii]
+        if (block == last_block_placed) {
+          shortcut = false
+          break;
+        }
+        if (target_dict[block] == true){
+
+          //console.log("DOING SHORTCUT!")
+          shortcut = previous_solution.slice(0, ii + 1)
+          previous_solution = previous_solution.slice(ii+1, previous_solution.length)
+          break;
+        }
       }
-    }
-    //console.log("AFTER loop")
-    if (shortcut != false && !graph.has_teleports){
-      fullpath = fullpath.concat(shortcut)
-      index += 1
-      cur = [fullpath[fullpath.length -1]]
-      // if (last_block_placed == block_in_question){
-      //   console.log("shortcut")
-      //   console.log(shortcut)
-      //   for (var kkk in shortcut){
-      //     console.log(graph.unkeyify(shortcut[kkk]))
-      //   }
-      //   console.log("temp fullpath")
-      //   console.log(fullpath)
-      // }
-      continue;
+      if (shortcut){
+        fullpath = fullpath.concat(shortcut)
+        index += 1
+        cur = [fullpath[fullpath.length -1]]
+        continue;
+      }
     }
     var pathObj = graph.find_path(blocks, extra_block, cur, target_dict);
     //console.log("pathObj")
