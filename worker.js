@@ -124,28 +124,31 @@ if(exhaustiveSearchDepth > 0) {
       var lastExhaustiveSearchScore = currAnnealingScore;
 
       while(true) {
-        var res = performExhaustiveSearch(lastExhaustiveSearchBlocks, graph);
+        var initialResult = performExhaustiveSearch(lastExhaustiveSearchBlocks, graph);
 
-        lastExhaustiveSearchBlocks = graph.dictify_blocks(res.solution);
+        lastExhaustiveSearchBlocks = graph.dictify_blocks(initialResult.solution);
 
-        if(res.score > lastExhaustiveSearchScore) {
+        // Analyst.place_greedy occasionally returns a score which is too high.
+        var checkedScore = Analyst.find_pathery_path(graph, lastExhaustiveSearchBlocks).value;
+
+        if(checkedScore > lastExhaustiveSearchScore) {
           iterations++;
 
-          lastExhaustiveSearchScore = res.score;
+          lastExhaustiveSearchScore = checkedScore;
         } else {
           var endTime = Date.now();
 
           console.log(
-              'Worker ' + process.pid + ' finished ' + iterations + ' iterations of exhaustive search on ' + currAnnealingScore + ' yielding ' + res.score + ' after ' + ((endTime - startTime) / 1000) + ' seconds.' +
+              'Worker ' + process.pid + ' finished ' + iterations + ' iterations of exhaustive search on ' + currAnnealingScore + ' yielding ' + checkedScore + ' after ' + ((endTime - startTime) / 1000) + ' seconds.' +
                   ' Run after ' + _debug_NonExhaustiveSearchIterations + ' non-exhaustive iterations (' + ((startTime - _debug_LastExhaustiveSearchEndTime) / 1000) + ' seconds).'
           );
           _debug_LastExhaustiveSearchEndTime = endTime;
           _debug_NonExhaustiveSearchIterations = 0;
 
-          Monitor.recordExhaustiveResult(res.score);
+          Monitor.recordExhaustiveResult(checkedScore);
 
           return {
-            score: res.score,
+            score: checkedScore,
             solution: lastExhaustiveSearchBlocks
           }
         }
