@@ -62,6 +62,20 @@ if(exhaustiveSearchDepth > 0) {
   const DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS = 2000;
 
   /**
+   * @see NON_TOP_EXHAUSTIVE_SEARCH_ADDEND
+   *
+   * @constant {Number}
+   */
+  const NON_TOP_EXHAUSTIVE_SEARCH_BASE = 3;
+
+  /**
+   * @see NON_TOP_EXHAUSTIVE_SEARCH_BASE
+   *
+   * @constant {Number}
+   */
+  const NON_TOP_EXHAUSTIVE_SEARCH_ADDEND = 1;
+
+  /**
    * This will be set to false once @see DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS have passed, thus causing exhaustive
    * searches to go forward.
    *
@@ -77,42 +91,66 @@ if(exhaustiveSearchDepth > 0) {
    */
   var topAnnealingScore = null;
 
+  var _debug_LastExhaustiveSearchEndTime = Date.now();
+  var _debug_NonExhaustiveSearchIterations = 0;
+
   exhaustiveSearchWrapper = function (currAnnealingScore, currBlocks, graph) {
+    var doExhaustiveSearch;
+
     if(delayExhaustiveSearch) {
       delayExhaustiveSearch = (Date.now() - workerStartedAt) < DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS;
+
+      doExhaustiveSearch = false;
     } else {
-      var doExhaustiveSearch;
+      // Potentially greater than 1 based on delta...obviously anything greater than 1 is equivalent to 1.
+      var doExhaustiveSearchProbability = 1 / Math.pow(NON_TOP_EXHAUSTIVE_SEARCH_BASE, topAnnealingScore - currAnnealingScore + NON_TOP_EXHAUSTIVE_SEARCH_ADDEND);
 
-      if(topAnnealingScore === null || currAnnealingScore > topAnnealingScore) {
-        topAnnealingScore = currAnnealingScore;
+      doExhaustiveSearch = ExploratoryUtilities.random() < doExhaustiveSearchProbability;
+    }
 
-        doExhaustiveSearch = true;
-      } else {
-        doExhaustiveSearch = false;
-      }
+    if(topAnnealingScore === null || currAnnealingScore > topAnnealingScore) {
+      topAnnealingScore = currAnnealingScore;
+    }
 
-      if(doExhaustiveSearch) {
-        // console.log('Worker ' + process.pid + ' started exhaustive search on ' + currAnnealingScore + '.');
+    // Perform an exhaustive search and then _continue_ to perform exhaustive searches as long as the score keeps improving.
+    if(doExhaustiveSearch) {
+      var iterations = 1;
+      var startTime = Date.now();
+      var lastExhaustiveSearchBlocks = _.extend({}, currBlocks);
+      var lastExhaustiveSearchScore = currAnnealingScore;
 
-        var startTime = Date.now();
-        var res = performExhaustiveSearch(_.extend({}, currBlocks), graph);
-        var runTime = Date.now() - startTime;
+      while(true) {
+        var res = performExhaustiveSearch(lastExhaustiveSearchBlocks, graph);
 
-        console.log('Worker ' + process.pid + ' finished exhaustive search on ' + currAnnealingScore + ' yielding ' + res.score + ' after ' + (runTime / 1000) + ' seconds.');
+        lastExhaustiveSearchBlocks = graph.dictify_blocks(res.solution);
 
-        if(res.score > currAnnealingScore) {
+        if(res.score > lastExhaustiveSearchScore) {
+          iterations++;
+
+          lastExhaustiveSearchScore = res.score;
+        } else {
+          var endTime = Date.now();
+
+          console.log(
+              'Worker ' + process.pid + ' finished ' + iterations + ' iterations of exhaustive search on ' + currAnnealingScore + ' yielding ' + res.score + ' after ' + ((endTime - startTime) / 1000) + ' seconds.' +
+                  ' Run after ' + _debug_NonExhaustiveSearchIterations + ' non-exhaustive iterations (' + ((startTime - _debug_LastExhaustiveSearchEndTime) / 1000) + ' seconds).'
+          );
+          _debug_LastExhaustiveSearchEndTime = endTime;
+          _debug_NonExhaustiveSearchIterations = 0;
+
           return {
             score: res.score,
-            solution: graph.dictify_blocks(res.solution)
+            solution: lastExhaustiveSearchBlocks
           }
         }
       }
-    }
+    } else {
+      _debug_NonExhaustiveSearchIterations++;
 
-    // Simply return the input if we did not attempt an exhaustive or the exhaustive did not yield an improved score.
-    return {
-      score: currAnnealingScore,
-      solution: currBlocks
+      return {
+        score: currAnnealingScore,
+        solution: currBlocks
+      }
     }
   };
 
