@@ -25,7 +25,7 @@ if(!listifiedBlocks || !mapId) {
   var rawPath = solution.paths[0];
 
   if(rawPath) {
-    var path = map.graph().listify_blocks(rawPath);
+    var path = rawPath.map(function (blockKey) { return map.graph().unkeyify(blockKey); });
     var score = solution.value;
 
     console.log('path:', path);
