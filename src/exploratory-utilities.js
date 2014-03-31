@@ -8,6 +8,9 @@ var FS = require('fs');
 
 var _ = require('underscore');
 
+////////////////////////////////////////////////////////////////////////////////
+// Global(ish) configuration.
+
 module.exports.CONFIGURATION_DEFAULTS = {
   placeBlockVersion: 'Oliver',
   repeatableRandomNumbers: false
@@ -57,6 +60,9 @@ module.exports.configuration = (function () {
 
   return configuration;
 })();
+
+////////////////////////////////////////////////////////////////////////////////
+// Seeded randomization.
 
 /**
  * By default is simply an alias for Math.random. Changed to a drop-in replacement for Math.random which supports
@@ -112,3 +118,118 @@ module.exports.useRepeatableRandomNumbers = function (seed) {
 if(module.exports.configuration.repeatableRandomNumbers) {
   module.exports.useRepeatableRandomNumbers(module.exports.configuration.repeatableRandomNumbers);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Utility functions.
+
+/**
+ * Convert the path as returned by the server into a listified path.
+ *
+ * @param serverPathObject - The path component from e.g. module:pathery/communication/api.postSolution.
+ * @returns {Array}
+ */
+module.exports.convertServerPathToListifiedPath = function (serverPathObject) {
+  var startBlock = convertServerBlock(serverPathObject.start);
+  var endBlock = convertServerBlock(serverPathObject.end);
+  var serverPathComponents = serverPathObject.path.split('');
+  var path = [];
+  var lastPushedBlock;
+
+  if(!validDestinationComponent(serverPathComponents.shift())) {
+    throw new Error('invariant');
+  }
+  if(serverPathComponents.pop() !== 'r') {
+    throw new Error('invariant');
+  }
+
+  lastPushedBlock = startBlock;
+  path.push(lastPushedBlock);
+
+  for(var i = 0; i < serverPathComponents.length; i++) {
+    var currBlock;
+
+    switch(serverPathComponents[i]) {
+      case '1':
+        currBlock = [
+          lastPushedBlock[0] - 1,
+          lastPushedBlock[1]
+        ];
+
+        break;
+      case '2':
+        currBlock = [
+          lastPushedBlock[0],
+          lastPushedBlock[1] + 1
+        ];
+
+        break;
+      case '3':
+        currBlock = [
+          lastPushedBlock[0] + 1,
+          lastPushedBlock[1]
+        ];
+
+        break;
+      case '4':
+        currBlock = [
+          lastPushedBlock[0],
+          lastPushedBlock[1] - 1
+        ];
+
+        break;
+      case 'r':
+        if(!validDestinationComponent(serverPathComponents[++i])) {
+          throw new Error('invariant');
+        }
+
+        currBlock = null;
+
+        break;
+      default:
+        throw new Error('invariant');
+    }
+
+    if(currBlock) {
+      path.push(currBlock);
+      lastPushedBlock = currBlock;
+    }
+  }
+
+  if(lastPushedBlock[0] !== endBlock[0] || lastPushedBlock[1] !== endBlock[1]) {
+    throw new Error('invariant');
+  }
+
+  return path;
+
+  ////////////////////
+  // Helper functions.
+
+  /**
+   * Convert from the server block format to the listified format.
+   *
+   * @param {String} serverBlock - e.g. "12,4".
+   * @returns {Number[]} E.g. [3, 12].
+   */
+  function convertServerBlock(serverBlock) {
+    var blockComponents = serverBlock.split(',');
+    var serverX = parseInt(blockComponents[1]);
+    var serverY = parseInt(blockComponents[0]);
+
+    if(isNaN(serverX) || isNaN(serverY)) {
+      throw new Error('invariant');
+    }
+
+    return [serverX - 1, serverY];
+  }
+
+  function validDestinationComponent(component) {
+    return {
+      a: true,
+      b: true,
+      c: true,
+      d: true,
+      e: true,
+      f: true
+    }[component];
+  }
+};
