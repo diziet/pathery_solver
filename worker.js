@@ -22,7 +22,11 @@ function run(params) {
 
   while(true) {
     var annealingResult = Analyst.annealingIteration(graph, currBlocks);
+    Monitor.recordAnnealingResult(annealingResult.score);
+
     var exhaustiveSearchResult = exhaustiveSearchWrapper(annealingResult.score, currBlocks, graph);
+
+    Monitor.broadcast();
 
     if(topScore === null || exhaustiveSearchResult.score > topScore) {
       topScore = exhaustiveSearchResult.score;
@@ -138,6 +142,8 @@ if(exhaustiveSearchDepth > 0) {
           _debug_LastExhaustiveSearchEndTime = endTime;
           _debug_NonExhaustiveSearchIterations = 0;
 
+          Monitor.recordExhaustiveResult(res.score);
+
           return {
             score: res.score,
             solution: lastExhaustiveSearchBlocks
@@ -226,3 +232,65 @@ if(exhaustiveSearchDepth > 0) {
     }
   };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Monitoring functionality.
+
+var Monitor = (function () {
+  const MONITOR_INTERVAL_MILLISECONDS = 60000;
+
+  var lastRunTime = Date.now();
+  var annealingDistribution = [];
+  var exhaustiveDistribution = [];
+
+  function getStatistics(distribution) {
+    var min = null;
+    var max = null;
+    var total = 0;
+    var sum = 0;
+
+    for(var i = 0; i < distribution.length; i++) {
+      var count = distribution[i];
+
+      if(count) {
+        if(min === null || i < min) {
+          min = i;
+        }
+
+        if(max === null || i > max) {
+          max = i;
+        }
+
+        total += count;
+        sum += count * i;
+      }
+    }
+
+    return {
+      min: min,
+      max: max,
+      total: total,
+      average: sum / total
+    }
+  }
+
+  return {
+    broadcast: function () {
+      var currTime = Date.now();
+
+      if(currTime - lastRunTime > MONITOR_INTERVAL_MILLISECONDS) {
+        console.log('MONITOR (worker ' + process.pid + '): annealingDistribution:', getStatistics(annealingDistribution), ' ; exhaustiveDistribution:', getStatistics(exhaustiveDistribution));
+
+        lastRunTime = currTime;
+        annealingDistribution = [];
+        exhaustiveDistribution = [];
+      }
+    },
+    recordAnnealingResult: function (annealingScore) {
+      annealingDistribution[annealingScore] = (annealingDistribution[annealingScore] || 0) + 1;
+    },
+    recordExhaustiveResult: function (exhaustiveScore) {
+      exhaustiveDistribution[exhaustiveScore] = (exhaustiveDistribution[exhaustiveScore] || 0) + 1;
+    }
+  }
+})();
