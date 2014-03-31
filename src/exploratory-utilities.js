@@ -12,6 +12,7 @@ var _ = require('underscore');
 // Global(ish) configuration.
 
 module.exports.CONFIGURATION_DEFAULTS = {
+  exhaustiveSearchDepth: 2,
   exhaustiveSearchDomain: 'combinatorial',
   placeBlockVersion: 'Oliver',
   repeatableRandomNumbers: false

@@ -1,4 +1,5 @@
 {
+  "exhaustiveSearchDepth": 2,
   "exhaustiveSearchDomain": "combinatorial",
   "placeBlockVersion": "Oliver",
   "repeatableRandomNumbers": false
