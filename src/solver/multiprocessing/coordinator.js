@@ -15,13 +15,23 @@ module.exports.startWorker = function (graph, initialSolution, options, onNewTop
   var worker = ChildProcess.fork(__dirname + '/worker.js', { env: (options.workerEnv) });
 
   worker.send({
-    board: graph.board,
-    initialSolution: initialSolution,
-    options: options
+    name: 'solve',
+    params: {
+      board: graph.board,
+      initialSolution: initialSolution,
+      options: options
+    }
   });
 
-  worker.on('message', function (childTopResult) {
-    onNewTopScoreCallback(childTopResult);
+  worker.on('message', function (message) {
+    switch(message.name) {
+      case 'new-result':
+        onNewTopScoreCallback(message.params);
+
+        break;
+      default:
+        throw new Error('unknown message from child: ' + message.name);
+    }
   });
 
   workers.push(worker);
