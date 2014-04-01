@@ -1,4 +1,3 @@
-var ChildProcess = require('child_process');
 var FS = require('fs');
 
 var Getopt = require('node-getopt');
@@ -6,6 +5,7 @@ var _ = require('underscore');
 
 var Analyst = require(__dirname + '/src/analyst.js');
 var PatheryAPI = require(__dirname + '/src/communication/api.js');
+var MultiprocessingCoordinator = require(__dirname + '/src/solver/multiprocessing/coordinator.js');
 var TopResultTracker = require(__dirname + '/src/top-result-tracker.js');
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -410,35 +410,27 @@ function executeMapByDateAndDifficultyCommand(client, configuration, commandPara
  */
 function solveMap(client, map, configuration) {
   var topResultTracker = new TopResultTracker(client, map, configuration);
-  var workers = [];
 
   for(var i = 0; i < configuration.workerCount; i++) {
-    workers.push(ChildProcess.fork(__dirname + '/worker.js'));
-  }
-
-  for(i = 0; i < workers.length; i++) {
-    var worker = workers[i];
-
     var initialBlocks = {};
+
     for(var j = 0; j < map.walls; j++) {
       Analyst.placeBlock(map.graph(), initialBlocks);
     }
 
-    worker.send({
-      board: map.board,
-      initialSolution: map.graph().listify_blocks(initialBlocks)
-    });
+    MultiprocessingCoordinator.startWorker(map.graph(), map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
+  }
 
-    worker.on('message', function (childTopResult) {
-      topResultTracker.registerResult(childTopResult);
+  ////////////////////
+  // Event handlers.
 
-      if(topResultTracker.isOptimal()) {
-        console.log('Reached optimal score...stopping workers.');
+  function onNewChildResult(childTopResult) {
+    topResultTracker.registerResult(childTopResult);
 
-        workers.forEach(function (worker) {
-          worker.kill();
-        });
-      }
-    });
+    if(topResultTracker.isOptimal()) {
+      console.log('Reached optimal score...stopping workers.');
+
+      MultiprocessingCoordinator.stopWorkers();
+    }
   }
 }

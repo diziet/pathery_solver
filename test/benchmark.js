@@ -3,11 +3,12 @@
 // TODO: Support parsing parameters from environment variables.
 //
 
-var ChildProcess = require('child_process');
+var _ = require('underscore');
 
 var Analyst = require(__dirname + '/../src/analyst.js');
-var PatheryAPI = require(__dirname + '/../src/communication/api.js');
 var ExploratoryUtilities = require(__dirname + '/../src/exploratory-utilities.js');
+var MultiprocessingCoordinator = require(__dirname + '/../src/solver/multiprocessing/coordinator.js');
+var PatheryAPI = require(__dirname + '/../src/communication/api.js');
 var TopResultTracker = require(__dirname + '/../src/top-result-tracker.js');
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,23 +139,14 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
 
         var foundOptimal = false;
         var topResultTracker = new TopResultTracker(null, map, { optimalScore: optimalScore, printResults: false });
-        var startTime;
+        var startTime = Date.now();
         var worker;
-        var workerEnv = {};
-        var workerParams = {
-          board: map.board,
-          initialSolution: map.graph().listify_blocks(benchmarkIterationParameter.initialBlocks)
-        };
+        var workerEnv = _.extend({}, process.env);
 
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + 'repeatableRandomNumbers'] = benchmarkIterationParameter.seed;
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + configurationAttributeToBenchmarkName] = jsonifiedVersionToBenchmark;
-        worker = ChildProcess.fork(__dirname + '/../worker.js', { env: workerEnv });
 
-        startTime = Date.now();
-
-        worker.send(workerParams);
-
-        worker.on('message', function (childTopResult) {
+        worker = MultiprocessingCoordinator.startWorker(map.graph(), map.graph().listify_blocks(benchmarkIterationParameter.initialBlocks), { workerEnv: workerEnv }, function (childTopResult) {
           topResultTracker.registerResult(childTopResult);
 
           if(topResultTracker.isOptimal()) {
