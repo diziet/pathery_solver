@@ -718,6 +718,7 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
 exports.placeBlock = placeBlock;
 
 function annealingIteration(graph, currBlocks) {
+  // TODO: Maybe remove/place n blocks with a probability of `1/(b ^ (n - 1))`?
   removeRandomBlock(graph, currBlocks);
   return placeBlock(graph, currBlocks);
 }

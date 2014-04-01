@@ -55,6 +55,8 @@ var exhaustiveSearchDepth = ExploratoryUtilities.configuration.exhaustiveSearchD
 if(exhaustiveSearchDepth > 0) {
   // TODO: Timeout the exhaustive search after some period of time?
   // TODO:     Additionally -- lower the depth if too many timeouts?
+  // TODO:     Alternatively, maybe vary the probability based upon the ratio between exhaustive and non-exhaustive.
+  // TODO: Keep a small cache (based on score/last seen) of exhaustively searched solutions...primarily to cut down on searching essentially the same top solution repeatedly.
 
   /**
    * The number of milliseconds to wait after the worker starts before attempting exhaustive searches.
