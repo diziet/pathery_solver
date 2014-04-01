@@ -430,7 +430,7 @@ function solveMap(client, map, configuration) {
     if(topResultTracker.isOptimal()) {
       console.log('Reached optimal score...stopping workers.');
 
-      MultiprocessingCoordinator.stopWorkers();
+      MultiprocessingCoordinator.terminate();
     }
   }
 }

@@ -201,6 +201,8 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
             );
           }
         }
+
+        MultiprocessingCoordinator.terminate();
       }
 
       /**

@@ -14,6 +14,7 @@ var _ = require('underscore');
 module.exports.CONFIGURATION_DEFAULTS = {
   exhaustiveSearchDepth: 2,
   exhaustiveSearchDomain: 'combinatorial',
+  monitorPort: 8018,
   placeBlockVersion: 'Oliver',
   repeatableRandomNumbers: false
 };

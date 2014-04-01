@@ -18,9 +18,5 @@ process.on('message', function (message) {
             function (newTopResult) { process.send({ name: 'new-result', params: newTopResult }); }
         );
       }
-
-      break;
-    default:
-      throw new Error('unknown message from parent: ' + message.name);
   }
 });

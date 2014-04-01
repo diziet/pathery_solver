@@ -1,9 +1,9 @@
 /** @module pathery/solver */
 
-var Analyst = require('./../src/analyst.js');
-var ExploratoryUtilities = require('./../src/exploratory-utilities.js');
+var Analyst = require('./analyst.js');
+var ExploratoryUtilities = require('./exploratory-utilities.js');
 
-var Monitor = require('./solver/monitor.js');
+var MonitoringClient = require('./solver/monitoring/client.js');
 
 /**
  * Find solutions, calling onNewTopScoreCallback whenever a better one is found.
@@ -46,11 +46,9 @@ module.exports.solve = function (graph, initialSolution, options, onNewTopScoreC
 
   while(true) {
     var annealingResult = Analyst.annealingIteration(graph, currBlocks);
-    Monitor.recordAnnealingResult(annealingResult.score);
+    MonitoringClient.recordAnnealingResult(annealingResult.score);
 
     var exhaustiveSearchResult = exhaustiveSearchWrapper(graph, currBlocks, annealingResult.score);
-
-    Monitor.broadcast();
 
     if(topScore === null || exhaustiveSearchResult.score > topScore) {
       topScore = exhaustiveSearchResult.score;

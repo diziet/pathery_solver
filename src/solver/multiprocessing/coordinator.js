@@ -1,5 +1,21 @@
 var ChildProcess = require('child_process');
 
+var ExploratoryUtilities = require('./../../exploratory-utilities.js');
+
+var MonitoringServer = (function () {
+  var monitorPort = ExploratoryUtilities.configuration.monitorPort;
+
+  if(monitorPort) {
+    var ret = require('./../monitoring/server.js');
+
+    ret.start(monitorPort);
+
+    return ret;
+  } else {
+    return null;
+  }
+})();
+
 var workers = [];
 
 /**
@@ -7,12 +23,16 @@ var workers = [];
  *
  * @param {Analyst.PatheryGraph} graph
  * @param {Number[][]} initialSolution
- * @param {Object} options
+ * @param {{workerEnv: Object}} options
  * @param {Function} onNewTopScoreCallback
  * @returns {ChildProcess} For convenience, returns the process corresponding to the worker; in general, however, this should not be used.
  */
 module.exports.startWorker = function (graph, initialSolution, options, onNewTopScoreCallback) {
   var worker = ChildProcess.fork(__dirname + '/worker.js', { env: (options.workerEnv) });
+
+  if(MonitoringServer) {
+    MonitoringServer.registerWorker(worker);
+  }
 
   worker.send({
     name: 'solve',
@@ -27,10 +47,6 @@ module.exports.startWorker = function (graph, initialSolution, options, onNewTop
     switch(message.name) {
       case 'new-result':
         onNewTopScoreCallback(message.params);
-
-        break;
-      default:
-        throw new Error('unknown message from child: ' + message.name);
     }
   });
 
@@ -39,8 +55,12 @@ module.exports.startWorker = function (graph, initialSolution, options, onNewTop
   return worker;
 };
 
-module.exports.stopWorkers = function () {
+module.exports.terminate = function () {
   workers.forEach(function (worker) {
     worker.kill();
   });
+
+  if(MonitoringServer) {
+    MonitoringServer.stop();
+  }
 };

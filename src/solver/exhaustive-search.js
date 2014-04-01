@@ -8,7 +8,7 @@ var _ = require('underscore');
 var Analyst = require('./../analyst.js');
 var ExploratoryUtilities = require('./../exploratory-utilities.js');
 
-var Monitor = require('./monitor.js');
+var MonitoringClient = require('./monitoring/client.js');
 
 /**
  * The number of milliseconds to wait after the worker starts before attempting exhaustive searches.
@@ -141,7 +141,7 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
         _debug_LastExhaustiveSearchEndTime = endTime;
         _debug_NonExhaustiveSearchIterations = 0;
 
-        Monitor.recordExhaustiveResult(checkedScore);
+        MonitoringClient.recordExhaustiveResult(checkedScore);
 
         return {
           score: checkedScore,
