@@ -202,7 +202,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
           }
         }
 
-        MultiprocessingCoordinator.terminate();
+        MultiprocessingCoordinator.stopAll();
       }
 
       /**

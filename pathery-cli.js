@@ -18,6 +18,7 @@ var configuration = {
   hostname: PatheryAPI.Client.DEFAULT_HOSTNAME,
   port: PatheryAPI.Client.DEFAULT_PORT,
   optimalScore: null,
+  stopMonitoringServer: true,
   printResults: true,
   workerCount: 1,
   startAt: null,
@@ -39,6 +40,7 @@ var getopt = new Getopt([
     ['', 'port=INT', 'The port for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_PORT + ').'],
     // Miscellaneous options.
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
+    ['', 'no-stop-monitoring-server', 'Do not stop the monitoring HTTP server when the optimal score is reached.'],
     ['', 'no-print-results', 'Do not print top results.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
     // Retry and timing options.
@@ -103,6 +105,10 @@ if(options.hasOwnProperty('optimal-score')) {
 
     process.exit(2);
   }
+}
+
+if(options.hasOwnProperty('no-stop-monitoring-server')) {
+  configuration.stopMonitoringServer = !options['no-stop-monitoring-server'];
 }
 
 if(options.hasOwnProperty('no-print-results')) {
@@ -430,7 +436,11 @@ function solveMap(client, map, configuration) {
     if(topResultTracker.isOptimal()) {
       console.log('Reached optimal score...stopping workers.');
 
-      MultiprocessingCoordinator.terminate();
+      if(configuration.stopMonitoringServer) {
+        MultiprocessingCoordinator.stopAll();
+      } else {
+        MultiprocessingCoordinator.stopWorkers();
+      }
     }
   }
 }

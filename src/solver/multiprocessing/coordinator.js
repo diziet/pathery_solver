@@ -55,12 +55,19 @@ module.exports.startWorker = function (graph, initialSolution, options, onNewTop
   return worker;
 };
 
-module.exports.terminate = function () {
-  workers.forEach(function (worker) {
-    worker.kill();
-  });
+module.exports.stopAll = function () {
+  module.exports.stopWorkers();
+  module.exports.stopMonitoringServer();
+};
 
+module.exports.stopMonitoringServer = function () {
   if(MonitoringServer) {
     MonitoringServer.stop();
   }
+};
+
+module.exports.stopWorkers = function () {
+  workers.forEach(function (worker) {
+    worker.kill();
+  });
 };
