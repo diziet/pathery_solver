@@ -1,5 +1,4 @@
 // TODO: Various derived statistics.
-// TODO: Visually display the score distributions.
 // TODO: Summary for all workers.
 // TODO: Interval summaries (e.g. last full minute, 5 minutes, hour).
 // TODO: Something additional on exhaustive start...not sure what though.
