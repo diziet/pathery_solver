@@ -1,3 +1,11 @@
+// TODO: Display HTML more prettily.
+// TODO: Various derived statistics.
+// TODO: Visually display the score distributions.
+// TODO: Summary for all workers.
+// TODO: Interval summaries (e.g. last full minute, 5 minutes, hour).
+// TODO: Something additional on exhaustive start...not sure what though.
+// TODO: Track statistics on improvement by exhaustive search.
+
 var http = require('http');
 
 var _ = require('underscore');
@@ -5,8 +13,8 @@ var _ = require('underscore');
 /** @variable {net.Server} */
 var httpServer = null;
 
-/** @variable {WorkerStatistics[]} */
-var workersStatistics = [];
+/** @variable {WorkerJournal[]} */
+var workerJournals = [];
 
 /**
  *
@@ -17,13 +25,14 @@ module.exports.start = function (port) {
     throw new Error();
   } else {
     httpServer = http.createServer(function (request, response) {
+      // TODO: /index.html and /index.json.
       if(request.url === '/' && request.method === 'GET') {
         var responseBody = JSON.stringify(
             {
-              workers: _.object(workersStatistics.map(function (workerStatistics) {
+              workers: _.object(workerJournals.map(function (workerJournal) {
                 return [
-                  workerStatistics.process.pid,
-                  workerStatistics.getStatistics()
+                  workerJournal.worker.pid,
+                  workerJournal.getReport()
                 ];
               }))
             },
@@ -40,6 +49,7 @@ module.exports.start = function (port) {
     });
 
     httpServer.on('error', function (e) {
+      // TODO: Automatically increment ports if taken?
       console.error('Monitoring server failed to start on port ' + port + ':', e);
     });
 
@@ -63,16 +73,16 @@ module.exports.registerWorker = function (worker) {
   if(!httpServer) {
     throw new Error();
   } else {
-    var workerStatistics = new WorkerStatistics(process);
+    var workerJournal = new WorkerJournal(worker);
 
-    workersStatistics.push(workerStatistics);
+    workerJournals.push(workerJournal);
 
     worker.send({ name: 'monitoring-enable' });
 
     worker.on('message', function (message) {
       switch(message.name) {
         case 'monitoring-update':
-          workerStatistics.onMonitoringUpdateMessage(message.params);
+          workerJournal.onMonitoringUpdateMessage(message.params);
       }
     })
   }
@@ -125,43 +135,93 @@ ScoringDistribution.prototype.notify = function (score) {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// WorkerStatistics
+// WorkerJournal
 
 /**
  *
- * @param {ChildProcess} process
+ * @param {ChildProcess} worker
  * @constructor
  */
-function WorkerStatistics(process) {
-  this.process = process;
+function WorkerJournal(worker) {
+  this.worker = worker;
+
   this.annealingDistribution = new ScoringDistribution();
+  this.annealingRunTime = 0;
+  this.annealingTopScoreInfo = null;
+
   this.exhaustiveDistribution = new ScoringDistribution();
+  this.exhaustiveRunTime = 0;
+  this.exhaustiveTopScoreInfo = null;
+
+  this.lastMessage = null;
 }
 
-WorkerStatistics.prototype.getStatistics = function () {
+WorkerJournal.prototype.getReport = function () {
   return {
-    annealing: this.annealingDistribution.getStatistics(),
-    exhaustive: this.exhaustiveDistribution.getStatistics()
+    annealing: {
+      statistics: this.annealingDistribution.getStatistics(),
+      runTime: this.annealingRunTime,
+      topScoreInfo: this.annealingTopScoreInfo
+    },
+    exhaustive: {
+      statistics: this.exhaustiveDistribution.getStatistics(),
+      runTime: this.exhaustiveRunTime,
+      topScoreInfo: this.exhaustiveTopScoreInfo
+    },
+    lastMessage: this.lastMessage
   }
 };
 
 /**
  *
- * @param {*} messageParams
+ * @param {Object} monitoringMessage
  */
-WorkerStatistics.prototype.onMonitoringUpdateMessage = function (messageParams) {
-  var updateType = messageParams[0];
+WorkerJournal.prototype.onMonitoringUpdateMessage = function (monitoringMessage) {
+  if(monitoringMessage.type === 'annealing') {
+    if(monitoringMessage.action === 'start') {
+      // Do nothing.
+    } else if(monitoringMessage.action === 'finish') {
+      this.annealingDistribution.notify(monitoringMessage.score);
 
-  switch(updateType) {
-    case 'annealing':
-      this.annealingDistribution.notify(messageParams[1]);
+      if(this.lastMessage.type !== 'annealing' || this.lastMessage.action !== 'start') {
+        console.error.log('bad message order:', this.lastMessage);
+      } else {
+        this.annealingRunTime += monitoringMessage.time - this.lastMessage.time;
+      }
 
-      break;
-    case 'exhaustive':
-      this.exhaustiveDistribution.notify(messageParams[1]);
+      if(this.annealingTopScoreInfo === null || monitoringMessage.score > this.annealingTopScoreInfo.score) {
+        this.annealingTopScoreInfo = {
+          score: monitoringMessage.score,
+          time: monitoringMessage.time
+        }
+      }
+    } else {
+      throw new Error('unknown monitoring message action: ' + monitoringMessage.action);
+    }
+  } else if(monitoringMessage.type === 'exhaustive') {
+    if(monitoringMessage.action === 'start') {
+      // Do nothing.
+    } else if(monitoringMessage.action === 'finish') {
+      this.exhaustiveDistribution.notify(monitoringMessage.score);
 
-      break;
-    default:
-      throw new Error('unknown monitoring message type:', updateType);
+      if(this.lastMessage.type !== 'exhaustive' || this.lastMessage.action !== 'start') {
+        console.error.log('bad message order:', this.lastMessage);
+      } else {
+        this.exhaustiveRunTime += monitoringMessage.time - this.lastMessage.time;
+      }
+
+      if(this.exhaustiveTopScoreInfo === null || monitoringMessage.score > this.exhaustiveTopScoreInfo.score) {
+        this.exhaustiveTopScoreInfo = {
+          score: monitoringMessage.score,
+          time: monitoringMessage.time
+        }
+      }
+    } else {
+      throw new Error('unknown monitoring message action: ' + monitoringMessage.action);
+    }
+  } else {
+    throw new Error('unknown monitoring message type: ' + monitoringMessage.type);
   }
+
+  this.lastMessage = monitoringMessage;
 };

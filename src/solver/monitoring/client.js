@@ -11,21 +11,41 @@ process.on('message', function (message) {
   }
 });
 
-function sendUpdate(type, score) {
+/**
+ *
+ * @param {String} type - 'annealing' or 'exhaustive'.
+ * @param {String} action - 'start' or 'finish'.
+ * @param {Number} [score]
+ */
+function sendUpdate(type, action, score) {
   process.send({
     name: 'monitoring-update',
-    params: [type, score]
+    params: {
+      action: action,
+      score: score,
+      time: Date.now(),
+      type: type
+    }
   });
 }
 
+module.exports.recordAnnealingStart = function () {
+  sendUpdate('annealing', 'start');
+};
+
 module.exports.recordAnnealingResult = function (score) {
   if(monitoringStarted) {
-    sendUpdate('annealing', score);
+    sendUpdate('annealing', 'finish', score);
   }
 };
 
-module.exports.recordExhaustiveResult = function (score) {
+module.exports.recordExhaustiveStart = function () {
+  sendUpdate('exhaustive', 'start');
+};
+
+// TODO: Record iterations.
+module.exports.recordExhaustiveResult = function (score, iterations) {
   if(monitoringStarted) {
-    sendUpdate('exhaustive', score);
+    sendUpdate('exhaustive', 'finish', score);
   }
 };

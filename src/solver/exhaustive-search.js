@@ -56,9 +56,6 @@ var solverStartedAt = Date.now();
  */
 var topAnnealingScore = null;
 
-var _debug_LastExhaustiveSearchEndTime = Date.now();
-var _debug_NonExhaustiveSearchIterations = 0;
-
 /**
  * Choose search type based upon configuration.
  *
@@ -119,6 +116,8 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
     var lastExhaustiveSearchBlocks = _.extend({}, currBlocks);
     var lastExhaustiveSearchScore = currAnnealingScore;
 
+    MonitoringClient.recordExhaustiveStart();
+
     while(true) {
       var initialResult = specializedSearchFunction(graph, lastExhaustiveSearchBlocks);
 
@@ -132,16 +131,7 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
 
         lastExhaustiveSearchScore = checkedScore;
       } else {
-        var endTime = Date.now();
-
-        console.log(
-            'Worker ' + process.pid + ' finished ' + iterations + ' iterations of exhaustive search on ' + currAnnealingScore + ' yielding ' + checkedScore + ' after ' + ((endTime - startTime) / 1000) + ' seconds.' +
-                ' Run after ' + _debug_NonExhaustiveSearchIterations + ' non-exhaustive iterations (' + ((startTime - _debug_LastExhaustiveSearchEndTime) / 1000) + ' seconds).'
-        );
-        _debug_LastExhaustiveSearchEndTime = endTime;
-        _debug_NonExhaustiveSearchIterations = 0;
-
-        MonitoringClient.recordExhaustiveResult(checkedScore);
+        MonitoringClient.recordExhaustiveResult(checkedScore, iterations);
 
         //
         // While this will (presumably) always be true when doing a combinatorial search on the blocks to remove, it
@@ -161,8 +151,6 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
       }
     }
   } else {
-    _debug_NonExhaustiveSearchIterations++;
-
     return {
       score: currAnnealingScore,
       solution: currBlocks

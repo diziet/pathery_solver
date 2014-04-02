@@ -45,10 +45,14 @@ module.exports.solve = function (graph, initialSolution, options, onNewTopScoreC
   var topScore = null;
 
   while(true) {
-    var annealingResult = Analyst.annealingIteration(graph, currBlocks);
+    var annealingResult;
+    var exhaustiveSearchResult;
+
+    MonitoringClient.recordAnnealingStart();
+    annealingResult = Analyst.annealingIteration(graph, currBlocks);
     MonitoringClient.recordAnnealingResult(annealingResult.score);
 
-    var exhaustiveSearchResult = exhaustiveSearchWrapper(graph, currBlocks, annealingResult.score);
+    exhaustiveSearchResult = exhaustiveSearchWrapper(graph, currBlocks, annealingResult.score);
 
     if(topScore === null || exhaustiveSearchResult.score > topScore) {
       topScore = exhaustiveSearchResult.score;
