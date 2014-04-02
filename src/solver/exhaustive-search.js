@@ -133,20 +133,9 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
       } else {
         MonitoringClient.recordExhaustiveResult(checkedScore, iterations);
 
-        //
-        // While this will (presumably) always be true when doing a combinatorial search on the blocks to remove, it
-        // need not be when searching over a random subset.
-        //
-        if(checkedScore > currAnnealingScore) {
-          return {
-            score: checkedScore,
-            solution: lastExhaustiveSearchBlocks
-          }
-        } else {
-          return {
-            score: currAnnealingScore,
-            solution: currBlocks
-          };
+        return {
+          score: checkedScore,
+          solution: lastExhaustiveSearchBlocks
         }
       }
     }
