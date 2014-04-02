@@ -13,6 +13,13 @@ var strftime = require('strftime');
 
 var WorkerJournal = require('./server/worker-journal.js');
 
+/**
+ * The maximum number of times to attempt to listen on a new port.
+ *
+ * @constant {Number}
+ */
+const MAX_LISTEN_ATTEMPTS = 20;
+
 /** @variable {net.Server} */
 var httpServer = null;
 
@@ -20,10 +27,17 @@ var httpServer = null;
 var workerJournals = [];
 
 /**
+ * The actual port that the server is listening on. Not set until we are actually listening.
  *
- * @param {Number} port
+ * @member {Number}
  */
-module.exports.start = function (port) {
+module.exports.serverPort = null;
+
+/**
+ *
+ * @param {Number} initialPort
+ */
+module.exports.start = function (initialPort) {
   if(httpServer) {
     throw new Error();
   } else {
@@ -102,15 +116,41 @@ module.exports.start = function (port) {
       }
     });
 
-    httpServer.on('error', function (e) {
-      // TODO: Automatically increment ports if taken?
-      console.error('Monitoring server failed to start on port ' + port + ':', e);
-    });
+    (function () {
+      var currentPort = initialPort;
 
-    // N.B.: Totally unsecure...**do not** open to the outside world.
-    httpServer.listen(port, 'localhost', function () {
-      console.log('Monitoring server started at http://localhost:' + port + '/index.html');
-    });
+      httpServer.on('error', onServerError);
+      httpServer.on('listening', onServerListening);
+
+      // N.B.: Totally unsecure...**do not** open to the outside world.
+      httpServer.listen(currentPort, 'localhost');
+
+      ////////////////////
+      // Event handlers.
+
+      function onServerError(e) {
+        if(e.errno === 'EADDRINUSE' && currentPort < initialPort + MAX_LISTEN_ATTEMPTS) {
+          console.warn('Monitoring server failed to start on port ' + currentPort + '; attempting on port ' + ++currentPort);
+
+          // N.B.: Totally unsecure...**do not** open to the outside world.
+          httpServer.listen(currentPort, 'localhost');
+        } else {
+          console.error('Monitoring server failed to start on port ' + currentPort + ':', e);
+
+          httpServer.removeListener('error', onServerError);
+          httpServer.removeListener('listening', onServerListening);
+        }
+      }
+
+      function onServerListening() {
+        console.log('Monitoring server started at http://localhost:' + currentPort + '/index.html');
+
+        module.exports.serverPort = currentPort;
+
+        httpServer.removeListener('error', onServerError);
+        httpServer.removeListener('listening', onServerListening);
+      }
+    })();
   }
 };
 
@@ -118,6 +158,7 @@ module.exports.stop = function () {
   httpServer.close();
 
   httpServer = null;
+  module.exports.serverPort = null;
 };
 
 /**
