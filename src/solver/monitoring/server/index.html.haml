@@ -37,51 +37,31 @@
                     %dd
                       %time{ datatime: workerJournal.lastMessage.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.lastMessage.time)
 
-                %section
-                  %h4 Annealing
-                  %section
-                    %dl.dl-horizontal
-                      %dt Top Score
-                      %dd= workerJournal.annealingTopScoreInfo.score
-                      %dt Top Score At
-                      %dd
-                        %time{ datatime: workerJournal.annealingTopScoreInfo.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.annealingTopScoreInfo.time)
-                      - var annealingStatistics = workerJournal.annealingDistribution.getStatistics();
-                      %dt Count
-                      %dd= annealingStatistics.total
-                      - if(annealingStatistics.total > 0)
-                        %dt Total Time (s)
-                        %dd= workerJournal.annealingRunTime / 1000
-                        %dt Average Time (s)
-                        %dd= workerJournal.annealingRunTime / (1000 * annealingStatistics.total)
-                        %dt Min Score
-                        %dd= annealingStatistics.min
-                        %dt Max Score
-                        %dd= annealingStatistics.max
-                        %dt Average Score
-                        %dd= annealingStatistics.average
+                - each solverStageJournalPair in [[workerJournal.annealingJournal, 'Annealing'], [workerJournal.exhaustiveJournal, 'Exhaustive']]
+                  - var solverStageJournal = solverStageJournalPair[0];
+                  - var solverStageName = solverStageJournalPair[1];
 
-                - if(workerJournal.exhaustiveTopScoreInfo)
                   %section
-                    %h4 Exhaustive
-                    %section
+                    %h4= solverStageName
+
+                    - if(!solverStageJournal.isBlank())
+                      - var solverStageStatistics = solverStageJournal.scoringDistribution.calculateStatistics();
+
                       %dl.dl-horizontal
                         %dt Top Score
-                        %dd= workerJournal.exhaustiveTopScoreInfo.score
+                        %dd= solverStageJournal.scoringDistribution.max
                         %dt Top Score At
                         %dd
-                          %time{ datatime: workerJournal.exhaustiveTopScoreInfo.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.exhaustiveTopScoreInfo.time)
-                        - var exhaustiveStatistics = workerJournal.exhaustiveDistribution.getStatistics();
+                          %time{ datatime: solverStageJournal.topScoreTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', solverStageJournal.topScoreTime)
                         %dt Count
-                        %dd= exhaustiveStatistics.total
-                        - if(exhaustiveStatistics.total > 0)
-                          %dt Total Time (s)
-                          %dd= workerJournal.exhaustiveRunTime / 1000
-                          %dt Average Time (s)
-                          %dd= workerJournal.exhaustiveRunTime / (1000 * exhaustiveStatistics.total)
-                          %dt Min Score
-                          %dd= exhaustiveStatistics.min
-                          %dt Max Score
-                          %dd= exhaustiveStatistics.max
-                          %dt Average Score
-                          %dd= exhaustiveStatistics.average
+                        %dd= solverStageStatistics.total
+                        %dt Total Time (s)
+                        %dd= solverStageJournal.runTime / 1000
+                        %dt Average Time (s)
+                        %dd= solverStageJournal.runTime / (1000 * solverStageStatistics.total)
+                        %dt Min Score
+                        %dd= solverStageStatistics.min
+                        %dt Max Score
+                        %dd= solverStageStatistics.max
+                        %dt Average Score
+                        %dd= solverStageStatistics.average
