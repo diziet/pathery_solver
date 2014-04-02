@@ -23,7 +23,7 @@ function sendUpdate(type, action, score) {
     params: {
       action: action,
       score: score,
-      time: Date.now(),
+      time: (new Date()),
       type: type
     }
   });

@@ -1,0 +1,87 @@
+!!!5
+%html{ lang: 'en' }
+  %head
+    %meta{ charset: 'utf-8' }
+
+    %link{ href: '//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css', rel: 'stylesheet' }
+    %link{ href: '/assets/index.css', rel: 'stylesheet' }
+
+    %script{ src: '//code.jquery.com/jquery-2.1.0.min.js' }
+    %script{ src: '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js' }
+    %script{ src: '/assets/bootstrap-tab-history.js' }
+
+    %title Monitor
+  %body
+    %main{ role: 'main' }
+      .container
+        %section
+          %h2 Workers
+
+          %ul.nav.nav-tabs
+            - each workerJournal, idx in workerJournals
+              %li{ class: (idx == 0 ? 'active' : null) }
+                %a{ href: '#worker-' + workerJournal.worker.pid, 'data-toggle': 'tab', 'data-tab-history': 'true', 'data-tab-history-changer': 'push', 'data-tab-history-update-url': 'true' } #{ workerJournal.worker.pid }
+          .tab-content
+            - each workerJournal, idx in workerJournals
+              .tab-pane{ class: (idx == 0 ? 'active' : null), id: 'worker-' + workerJournal.worker.pid }
+                %h3 Worker #{workerJournal.worker.pid}
+
+                %section
+                  %h4 Last Message
+                  %dl.dl-horizontal
+                    %dt Type
+                    %dd= workerJournal.lastMessage.type
+                    %dt Action
+                    %dd= workerJournal.lastMessage.action
+                    %dt Time
+                    %dd
+                      %time{ datatime: workerJournal.lastMessage.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.lastMessage.time)
+
+                %section
+                  %h4 Annealing
+                  %section
+                    %dl.dl-horizontal
+                      %dt Top Score
+                      %dd= workerJournal.annealingTopScoreInfo.score
+                      %dt Top Score At
+                      %dd
+                        %time{ datatime: workerJournal.annealingTopScoreInfo.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.annealingTopScoreInfo.time)
+                      - var annealingStatistics = workerJournal.annealingDistribution.getStatistics();
+                      %dt Count
+                      %dd= annealingStatistics.total
+                      - if(annealingStatistics.total > 0)
+                        %dt Total Time (s)
+                        %dd= workerJournal.annealingRunTime / 1000
+                        %dt Average Time (s)
+                        %dd= workerJournal.annealingRunTime / (1000 * annealingStatistics.total)
+                        %dt Min Score
+                        %dd= annealingStatistics.min
+                        %dt Max Score
+                        %dd= annealingStatistics.max
+                        %dt Average Score
+                        %dd= annealingStatistics.average
+
+                - if(workerJournal.exhaustiveTopScoreInfo)
+                  %section
+                    %h4 Exhaustive
+                    %section
+                      %dl.dl-horizontal
+                        %dt Top Score
+                        %dd= workerJournal.exhaustiveTopScoreInfo.score
+                        %dt Top Score At
+                        %dd
+                          %time{ datatime: workerJournal.exhaustiveTopScoreInfo.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.exhaustiveTopScoreInfo.time)
+                        - var exhaustiveStatistics = workerJournal.exhaustiveDistribution.getStatistics();
+                        %dt Count
+                        %dd= exhaustiveStatistics.total
+                        - if(exhaustiveStatistics.total > 0)
+                          %dt Total Time (s)
+                          %dd= workerJournal.exhaustiveRunTime / 1000
+                          %dt Average Time (s)
+                          %dd= workerJournal.exhaustiveRunTime / (1000 * exhaustiveStatistics.total)
+                          %dt Min Score
+                          %dd= exhaustiveStatistics.min
+                          %dt Max Score
+                          %dd= exhaustiveStatistics.max
+                          %dt Average Score
+                          %dd= exhaustiveStatistics.average
