@@ -27,8 +27,6 @@ module.exports.start = function (port) {
   if(httpServer) {
     throw new Error();
   } else {
-    const ASSETS_PATH = '/assets/';
-
     httpServer = http.createServer(function (request, response) {
       if(request.url === '/' && request.headers['Accept'] === 'application/json' || request.url === '/index.json') {
         if(request.method === 'GET') {
@@ -44,69 +42,61 @@ module.exports.start = function (port) {
         }
       } else if(request.url === '/' || request.url === '/index.html') {
         if(request.method === 'GET') {
-          FS.readFile(__dirname + '/server/index.html.haml', { encoding: 'utf8' }, function (err, data) {
-            if(err) {
-              console.error(err);
-
-              response.writeHead(500, { 'Content-Type': 'text/html; charset=UTF-8' });
-              response.end('error: ' + err);
+          FS.readFile(__dirname + '/server/index.html.haml', { encoding: 'utf8' }, function (indexTemplateErr, indexTemplateContent) {
+            if(indexTemplateErr) {
+              onError(indexTemplateErr);
             } else {
-              var body;
-              var hamlError;
+              FS.readFile(__dirname + '/server/assets/index.js', { encoding: 'utf8' }, function (indexJavaScriptErr, indexJavaScriptContent) {
+                if(indexJavaScriptErr) {
+                  onError(indexJavaScriptErr);
+                } else {
+                  Sass.render({
+                    file: __dirname + '/server/assets/index.css.scss',
+                    error: onError,
+                    success: function (indexCSSContent) {
+                      var indexHTMLContent;
+                      var hamlError;
 
-              try {
-                body = HamlJS.render(data, { locals: { strftime: strftime, workerJournals: workerJournals } });
-              } catch(e) {
-                hamlError = e;
-              }
+                      try {
+                        indexHTMLContent = HamlJS.render(indexTemplateContent, {
+                          locals: {
+                            indexCSSContent: indexCSSContent,
+                            indexJavaScriptContent: '\n//<![CDATA[\n' + indexJavaScriptContent + '\n//]]>\n',
+                            strftime: strftime,
+                            workerJournals: workerJournals
+                          }
+                        });
+                      } catch(e) {
+                        hamlError = e;
+                      }
 
-              if(hamlError) {
-                console.error(hamlError);
-
-                response.writeHead(500, { 'Content-Type': 'text/html; charset=UTF-8' });
-                response.end('error: ' + hamlError);
-              } else {
-                response.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
-                response.end(body);
-              }
+                      if(hamlError) {
+                        onError(hamlError);
+                      } else {
+                        response.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+                        response.end(indexHTMLContent);
+                      }
+                    }
+                  });
+                }
+              });
             }
           });
+
+          ////////////////////
+          // Event handlers.
+
+          function onError(err) {
+            console.error(err);
+
+            response.writeHead(500, { 'Content-Type': 'text/html; charset=UTF-8' });
+            response.end('error: ' + err);
+          }
         } else {
           response.writeHead(405, { Allow: 'GET' });
           response.end();
         }
-      } else if(request.url.indexOf(ASSETS_PATH) === 0) {
-        var path = request.url.substr(ASSETS_PATH.length);
-
-        if(path.lastIndexOf('.css') === path.length - 4) {
-          Sass.render({
-            file: __dirname + '/server/assets/' + path + '.scss',
-            success: function (css) {
-              response.writeHead(200, { 'Content-Type': 'text/css' });
-              response.end(css);
-            },
-            error: function (err) {
-              console.error(err);
-
-              response.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
-              response.end('error: ' + err);
-            }
-          });
-        } else {
-          FS.readFile(__dirname + '/server/assets/' + path, { encoding: 'utf8' }, function (err, data) {
-            if(err) {
-              console.error(err);
-
-              response.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
-              response.end('error: ' + err);
-            } else {
-              response.writeHead(200);
-              response.end(data);
-            }
-          });
-        }
-      }
-      else {
+      } else {
         response.writeHead(404, { 'Content-Type': 'text/plain' });
         response.end('Only /index.html and /index.json served.');
       }

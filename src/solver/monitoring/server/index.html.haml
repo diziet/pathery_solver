@@ -4,13 +4,15 @@
     %meta{ charset: 'utf-8' }
 
     %link{ href: 'http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css', rel: 'stylesheet' }
-    %link{ href: '/assets/index.css', rel: 'stylesheet' }
+    %style
+      != indexCSSContent
 
     %script{ src: 'http://code.jquery.com/jquery-2.1.0.min.js' }
     %script{ src: 'http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js' }
     %script{ src: 'http://code.highcharts.com/highcharts.js' }
     %script{ src: 'https://raw.githubusercontent.com/mnarayan01/bootstrap-tab-history/v0.1.0/vendor/assets/javascripts/bootstrap-tab-history.js' }
-    %script{ src: '/assets/index.js' }
+    %script{ type: 'text/javascript' }
+      != indexJavaScriptContent
 
     %title Monitor
   %body
