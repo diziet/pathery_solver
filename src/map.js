@@ -1,15 +1,23 @@
 /** @module pathery */
 
+var URL = require('url');
+
+var strftime = require('strftime');
+var _ = require('underscore');
+
 var Analyst = require(__dirname + '/analyst.js');
 
 /**
  *
  * @param {Object} rawObject
+ * @param {Object} [urlOptions]
  * @constructor Map
  */
-const Map = module.exports = function (rawObject) {
+const Map = module.exports = function (rawObject, urlOptions) {
   /** @member {Object} */
   this.rawObject = rawObject;
+  /** @member {Object} */
+  this.urlOptions = urlOptions;
 
   // The following members are stored for convenience; all are derivable from rawObject.
 
@@ -25,12 +33,23 @@ const Map = module.exports = function (rawObject) {
 
   /** @member {Number} */
   this.id = rawObject.ID;
+  /** @member {String} */
+  this.name = rawObject.name;
   /** @member {Number} */
   this.walls = parseInt(rawObject.walls);
 };
 
 Map.build = function (attributes) {
-  return new Map(attributes.rawObject);
+  return new Map(attributes.rawObject, attributes.urlOptions);
+};
+
+/**
+ * A string representing the last open date for this map, e.g. `2014-04-02`.
+ *
+ * @returns {String}
+ */
+Map.prototype.dateString = function () {
+  return this._dateString || (this._dateString = strftime('%Y-%m-%d', new Date((this.rawObject.dateExpires - 1) * 1000)));
 };
 
 /**
@@ -47,8 +66,34 @@ Map.prototype.graph = function () {
  */
 Map.prototype.serializableHash = function () {
   return {
-    rawObject: this.rawObject
+    rawObject: this.rawObject,
+    urlOptions: this.urlOptions
   };
+};
+
+/**
+ * Return a URL appropriate for viewing this map in a browser, e.g. `http://www.pathery.com/scores#2014-04-02_4543_1_`.
+ *
+ * @returns {String}
+ */
+Map.prototype.url = function () {
+  if(this._url === undefined) {
+    if(this.urlOptions) {
+      var specializedURLOptions = _.extend(
+          {
+            hash: '#' + this.dateString() + '_' + this.id + '_1_',
+            pathname: '/scores'
+          },
+          this.urlOptions
+      );
+
+      this._url = URL.format(specializedURLOptions);
+    } else {
+      this._url = null;
+    }
+  }
+
+  return this._url;
 };
 
 /**

@@ -4,9 +4,12 @@ var http = require('http');
 var QueryString = require('querystring');
 
 var Q = require('q');
+var strftime = require('strftime');
 var _ = require('underscore');
 
 var Map = require(__dirname + '/../map.js');
+
+const PROTOCOL = 'http';
 
 /**
  *
@@ -97,6 +100,7 @@ module.exports.Client.DEFAULT_PORT = 80;
  */
 module.exports.Client.prototype.getMap = function (mapId, options) {
   var requestPath = '/a/map/' + mapId + '.js';
+  var self = this;
 
   // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
   if(options && options.preventCaching) {
@@ -104,7 +108,7 @@ module.exports.Client.prototype.getMap = function (mapId, options) {
   }
 
   return this.getJSON(requestPath).then(function (rawMapObject) {
-    return new Map(rawMapObject);
+    return new Map(rawMapObject, { hostname: self.hostname, port: self.port, protocol: PROTOCOL });
   });
 };
 
@@ -115,7 +119,7 @@ module.exports.Client.prototype.getMap = function (mapId, options) {
  * @returns {Q.Promise}
  */
 module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
-  var requestPath = '/a/mapsbydate/' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + '.js';
+  var requestPath = '/a/mapsbydate/' + strftime('%Y-%m-%d', date) + '.js';
 
   // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
   if(options && options.preventCaching) {

@@ -34,8 +34,14 @@
                   %section.col-xs-6
                     %h4 General information
                     %dl.dl-horizontal
-                      %dt Map ID
-                      %dd= workerJournal.map.id
+                      %dt Map
+                      %dd
+                        - var linkContent = workerJournal.map.id + ' (' + workerJournal.map.dateString() + ' ' + workerJournal.map.name + ')';
+                        - var url = workerJournal.map.url();
+                        - if(url)
+                          %a{ href: url }= linkContent
+                        - else
+                          %span= linkContent
                       %dt Start time
                       %dd
                         %time{ datatime: workerJournal.startTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.startTime)
