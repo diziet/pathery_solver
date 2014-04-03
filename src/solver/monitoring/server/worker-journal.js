@@ -5,9 +5,11 @@ var SolverStageJournal = require('./solver-stage-journal.js');
  * @constructor WorkerJournal
  *
  * @param {ChildProcess} worker
+ * @param {Map} map
  */
-var WorkerJournal = module.exports = function (worker) {
+var WorkerJournal = module.exports = function (worker, map) {
   this.worker = worker;
+  this.map = map;
   this.startTime = new Date();
 
   this.annealingJournal = new SolverStageJournal();
@@ -47,6 +49,7 @@ WorkerJournal.prototype.onMonitoringUpdateMessage = function (monitoringMessage)
 WorkerJournal.prototype.serializableHash = function () {
   return {
     workerPID: this.worker.pid,
+    mapId: this.map.id,
     startTime: this.startTime,
     annealingJournal: this.annealingJournal.serializableHash(),
     exhaustiveJournal: this.exhaustiveJournal.serializableHash(),

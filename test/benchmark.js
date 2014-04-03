@@ -146,7 +146,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + 'repeatableRandomNumbers'] = benchmarkIterationParameter.seed;
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + configurationAttributeToBenchmarkName] = jsonifiedVersionToBenchmark;
 
-        worker = MultiprocessingCoordinator.startWorker(map.graph(), map.graph().listify_blocks(benchmarkIterationParameter.initialBlocks), { workerEnv: workerEnv }, function (childTopResult) {
+        worker = MultiprocessingCoordinator.startWorker(map, map.graph().listify_blocks(benchmarkIterationParameter.initialBlocks), { workerEnv: workerEnv }, function (childTopResult) {
           topResultTracker.registerResult(childTopResult);
 
           if(topResultTracker.isOptimal()) {

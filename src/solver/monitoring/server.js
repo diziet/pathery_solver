@@ -164,12 +164,13 @@ module.exports.stop = function () {
 /**
  *
  * @param {ChildProcess} worker
+ * @param {Map} map
  */
-module.exports.registerWorker = function (worker) {
+module.exports.registerWorker = function (worker, map) {
   if(!httpServer) {
     throw new Error();
   } else {
-    var workerJournal = new WorkerJournal(worker);
+    var workerJournal = new WorkerJournal(worker, map);
 
     workerJournals.push(workerJournal);
 

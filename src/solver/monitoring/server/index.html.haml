@@ -34,6 +34,8 @@
                   %section.col-xs-6
                     %h4 General information
                     %dl.dl-horizontal
+                      %dt Map ID
+                      %dd= workerJournal.map.id
                       %dt Start time
                       %dd
                         %time{ datatime: workerJournal.startTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.startTime)

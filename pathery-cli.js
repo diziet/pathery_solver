@@ -478,7 +478,7 @@ function solveMap(client, map, configuration) {
       Analyst.placeBlock(map.graph(), initialBlocks);
     }
 
-    MultiprocessingCoordinator.startWorker(map.graph(), map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
+    MultiprocessingCoordinator.startWorker(map, map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
   }
 
   process.on('SIGINT', function () {
