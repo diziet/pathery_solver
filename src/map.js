@@ -7,9 +7,11 @@ var Analyst = require(__dirname + '/analyst.js');
  * @param {Object} rawObject
  * @constructor Map
  */
-module.exports = function (rawObject) {
+const Map = module.exports = function (rawObject) {
   /** @member {Object} */
   this.rawObject = rawObject;
+
+  // The following members are stored for convenience; all are derivable from rawObject.
 
   /** @member {String} */
   this.code = rawObject.code;
@@ -27,12 +29,26 @@ module.exports = function (rawObject) {
   this.walls = parseInt(rawObject.walls);
 };
 
+Map.build = function (attributes) {
+  return new Map(attributes.rawObject);
+};
+
 /**
  *
  * @returns {PatheryGraph}
  */
-module.exports.prototype.graph = function () {
+Map.prototype.graph = function () {
   return this._graph || (this._graph = new Analyst.PatheryGraph(this.board));
+};
+
+/**
+ *
+ * @returns {Object}
+ */
+Map.prototype.serializableHash = function () {
+  return {
+    rawObject: this.rawObject
+  };
 };
 
 /**

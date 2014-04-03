@@ -8,12 +8,15 @@ var MonitoringClient = require('./solver/monitoring/client.js');
 /**
  * Find solutions, calling onNewTopScoreCallback whenever a better one is found.
  *
- * @param {Analyst.PatheryGraph} graph
+ * @param {Map} map
  * @param {Number[][]} initialSolution
  * @param {Object} options
  * @param {Function} onNewTopScoreCallback
  */
-module.exports.solve = function (graph, initialSolution, options, onNewTopScoreCallback) {
+module.exports.solve = function (map, initialSolution, options, onNewTopScoreCallback) {
+  /** @variable {Analyst.PatheryGraph} */
+  var graph = map.graph();
+
   /**
    * Choose whether or not to do exhaustive searching based upon configuration.
    *

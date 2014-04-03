@@ -37,7 +37,7 @@ module.exports.startWorker = function (map, initialSolution, options, onNewTopSc
   worker.send({
     name: 'solve',
     params: {
-      board: map.board,
+      mapAttributes: map.serializableHash(),
       initialSolution: initialSolution,
       options: options
     }
