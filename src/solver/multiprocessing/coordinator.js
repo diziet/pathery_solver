@@ -75,50 +75,29 @@ module.exports.stopWorkers = function () {
 /**
  * Write a a report from Solver.Monitoring.Server (if it is running) to the specified directory.
  *
- * @param {String} monitoringReportDirectory
+ * @param {String} monitoringReportPath
  * @param {Function} onDoneCallback - No arguments. Called on success and failure.
  */
-module.exports.writeMonitoringReport = function (monitoringReportDirectory, onDoneCallback) {
-  if(MonitoringServer && MonitoringServer.serverPort) {
+module.exports.writeMonitoringReport = function (monitoringReportPath, onDoneCallback) {
+  if(MonitoringServer) {
     var FS = require('fs');
-    var http = require('http');
 
-    var request = http.request(
-        {
-          hostname: 'localhost',
-          path: '/index.html',
-          port: MonitoringServer.serverPort
-        },
-        function (response) {
-          var buffer = '';
-
-          response.setEncoding('utf8');
-
-          response.on('data', function (chunk) {
-            buffer += chunk;
-          });
-
-          response.on('end', function () {
-            if(response.statusCode === 200) {
-              try {
-                var monitoringReportPath = monitoringReportDirectory + '/report.' + Date.now() + '.html';
-
-                FS.writeFileSync(monitoringReportPath, buffer);
-              } catch(e) {
-                console.warn('Failed to write monitoring report: ' + e);
-              }
-
-              onDoneCallback();
-            } else {
-              console.warn('Failed to read monitoring report: ' + response.statusCode);
-
-              onDoneCallback();
+    MonitoringServer.renderIndexHTML(
+        function (indexHTMLContent) {
+          FS.writeFile(monitoringReportPath, indexHTMLContent, function (err) {
+            if(err) {
+              console.warn('Failed to write monitoring report:', err);
             }
+
+            onDoneCallback();
           });
+        },
+        function (err) {
+          console.warn('Failed to generate monitoring report:', err);
+
+          onDoneCallback();
         }
     );
-
-    request.end();
   } else {
     onDoneCallback();
   }

@@ -27,11 +27,52 @@ var httpServer = null;
 var workerJournals = [];
 
 /**
- * The actual port that the server is listening on. Not set until we are actually listening.
+ * Render the index.html.haml template, passing the final content to the provided onSuccessCallback.
  *
- * @member {Number}
+ * @param {Function} onSuccessCallback
+ * @param {Function} onErrorCallback
  */
-module.exports.serverPort = null;
+module.exports.renderIndexHTML = function (onSuccessCallback, onErrorCallback) {
+  FS.readFile(__dirname + '/server/index.html.haml', { encoding: 'utf8' }, function (readIndexTemplateErr, indexTemplateContent) {
+    if(readIndexTemplateErr) {
+      onErrorCallback(readIndexTemplateErr);
+    } else {
+      FS.readFile(__dirname + '/server/assets/index.js', { encoding: 'utf8' }, function (readIndexJavaScriptErr, indexJavaScriptContent) {
+        if(readIndexJavaScriptErr) {
+          onErrorCallback(readIndexJavaScriptErr);
+        } else {
+          Sass.render({
+            file: __dirname + '/server/assets/index.css.scss',
+            error: onErrorCallback,
+            success: function (indexCSSContent) {
+              var indexHTMLContent;
+              var hamlError;
+
+              try {
+                indexHTMLContent = HamlJS.render(indexTemplateContent, {
+                  locals: {
+                    indexCSSContent: indexCSSContent,
+                    indexJavaScriptContent: indexJavaScriptContent,
+                    strftime: strftime,
+                    workerJournals: workerJournals
+                  }
+                });
+              } catch(e) {
+                hamlError = e;
+              }
+
+              if(hamlError) {
+                onErrorCallback(hamlError);
+              } else {
+                onSuccessCallback(indexHTMLContent);
+              }
+            }
+          });
+        }
+      });
+    }
+  });
+};
 
 /**
  *
@@ -56,56 +97,18 @@ module.exports.start = function (initialPort) {
         }
       } else if(request.url === '/' || request.url === '/index.html') {
         if(request.method === 'GET') {
-          FS.readFile(__dirname + '/server/index.html.haml', { encoding: 'utf8' }, function (indexTemplateErr, indexTemplateContent) {
-            if(indexTemplateErr) {
-              onError(indexTemplateErr);
-            } else {
-              FS.readFile(__dirname + '/server/assets/index.js', { encoding: 'utf8' }, function (indexJavaScriptErr, indexJavaScriptContent) {
-                if(indexJavaScriptErr) {
-                  onError(indexJavaScriptErr);
-                } else {
-                  Sass.render({
-                    file: __dirname + '/server/assets/index.css.scss',
-                    error: onError,
-                    success: function (indexCSSContent) {
-                      var indexHTMLContent;
-                      var hamlError;
+          module.exports.renderIndexHTML(
+              function (indexHTMLContent) {
+                response.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+                response.end(indexHTMLContent);
+              },
+              function (err) {
+                console.error(err);
 
-                      try {
-                        indexHTMLContent = HamlJS.render(indexTemplateContent, {
-                          locals: {
-                            indexCSSContent: indexCSSContent,
-                            indexJavaScriptContent: '\n//<![CDATA[\n' + indexJavaScriptContent + '\n//]]>\n',
-                            strftime: strftime,
-                            workerJournals: workerJournals
-                          }
-                        });
-                      } catch(e) {
-                        hamlError = e;
-                      }
-
-                      if(hamlError) {
-                        onError(hamlError);
-                      } else {
-                        response.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
-                        response.end(indexHTMLContent);
-                      }
-                    }
-                  });
-                }
-              });
-            }
-          });
-
-          ////////////////////
-          // Event handlers.
-
-          function onError(err) {
-            console.error(err);
-
-            response.writeHead(500, { 'Content-Type': 'text/html; charset=UTF-8' });
-            response.end('error: ' + err);
-          }
+                response.writeHead(500, { 'Content-Type': 'text/html; charset=UTF-8' });
+                response.end('error: ' + err);
+              }
+          );
         } else {
           response.writeHead(405, { Allow: 'GET' });
           response.end();
@@ -145,8 +148,6 @@ module.exports.start = function (initialPort) {
       function onServerListening() {
         console.log('Monitoring server started at http://localhost:' + currentPort + '/index.html');
 
-        module.exports.serverPort = currentPort;
-
         httpServer.removeListener('error', onServerError);
         httpServer.removeListener('listening', onServerListening);
       }
@@ -158,7 +159,6 @@ module.exports.stop = function () {
   httpServer.close();
 
   httpServer = null;
-  module.exports.serverPort = null;
 };
 
 /**

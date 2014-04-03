@@ -1,6 +1,7 @@
 var FS = require('fs');
 
 var Getopt = require('node-getopt');
+var strftime = require('strftime');
 var _ = require('underscore');
 
 var Analyst = require(__dirname + '/src/analyst.js');
@@ -440,30 +441,6 @@ function executeMapByDateAndDifficultyCommand(client, configuration, commandPara
 
 /**
  *
- * @param {Object} configuration
- * @param {Boolean} [exitWhenFinished]
- */
-function handleMonitoringCleanup(configuration, exitWhenFinished) {
-  if(configuration.monitoringReportDirectory) {
-    MultiprocessingCoordinator.writeMonitoringReport(configuration.monitoringReportDirectory, stopMonitoringServerIfSpecified);
-  } else {
-    stopMonitoringServerIfSpecified();
-  }
-
-  ////////////////////
-  // Helper functions.
-
-  function stopMonitoringServerIfSpecified() {
-    if(configuration.stopMonitoringServer || exitWhenFinished) {
-      MultiprocessingCoordinator.stopAll();
-
-      process.exit(0);
-    }
-  }
-}
-
-/**
- *
  * @param {PatheryAPI.Client} client
  * @param {Map} map
  * @param {Object} configuration
@@ -486,11 +463,40 @@ function solveMap(client, map, configuration) {
 
     MultiprocessingCoordinator.stopWorkers();
 
-    handleMonitoringCleanup(configuration, true);
+    handleMonitoringCleanup(true);
   });
 
   ////////////////////
-  // Event handlers.
+  // Helper functions.
+
+  /**
+   *
+   * @param {Boolean} [exitWhenFinished]
+   */
+  function handleMonitoringCleanup(exitWhenFinished) {
+    if(configuration.monitoringReportDirectory) {
+      var reportPath = configuration.monitoringReportDirectory + '/' + map.id + '.' + strftime('%Y%m%d%H%M%S', new Date()) + '.html';
+
+      MultiprocessingCoordinator.writeMonitoringReport(reportPath, stopMonitoringServerIfSpecified);
+    } else {
+      stopMonitoringServerIfSpecified();
+    }
+
+    ////////////////////
+    // Helper functions.
+
+    function stopMonitoringServerIfSpecified() {
+      if(configuration.stopMonitoringServer) {
+        MultiprocessingCoordinator.stopAll();
+      } else if(exitWhenFinished) {
+        MultiprocessingCoordinator.stopAll();
+
+        // If we don't exit, then we will have to wait for any in-transit HTTP requests, as well as an requests to the
+        // Solver.Monitoring.Server where 'Connection: keep-alive' is being honored.
+        process.exit(0);
+      }
+    }
+  }
 
   function onNewChildResult(childTopResult) {
     topResultTracker.registerResult(childTopResult);
@@ -500,7 +506,7 @@ function solveMap(client, map, configuration) {
 
       MultiprocessingCoordinator.stopWorkers();
 
-      handleMonitoringCleanup(configuration);
+      handleMonitoringCleanup();
     }
   }
 }

@@ -12,7 +12,7 @@
     %script{ src: 'http://code.highcharts.com/highcharts.js' }
     %script{ src: 'https://raw.githubusercontent.com/mnarayan01/bootstrap-tab-history/v0.1.0/vendor/assets/javascripts/bootstrap-tab-history.js' }
     %script{ type: 'text/javascript' }
-      != indexJavaScriptContent
+      != '\n//<![CDATA[\n' + indexJavaScriptContent + '\n//]]>\n'
 
     %title Monitor
   %body
