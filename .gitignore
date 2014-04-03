@@ -4,4 +4,7 @@ node_modules
 queries/cached_queries
 
 # Ignore all configuration other than config/cli.example.json and config/exploratory.example.json.
-config/*.json
+/config/*.json
+
+# Ignore output files in the data directory.
+/data

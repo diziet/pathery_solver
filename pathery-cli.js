@@ -17,6 +17,7 @@ const DIFFICULTY_DOMAIN_DESCRIPTION = 'an integer between 0 and ' + (Object.keys
 var configuration = {
   hostname: PatheryAPI.Client.DEFAULT_HOSTNAME,
   port: PatheryAPI.Client.DEFAULT_PORT,
+  monitoringReportDirectory: null,
   optimalScore: null,
   stopMonitoringServer: true,
   printResults: true,
@@ -39,8 +40,9 @@ var getopt = new Getopt([
     ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_HOSTNAME + ').'],
     ['', 'port=INT', 'The port for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_PORT + ').'],
     // Miscellaneous options.
+    ['', 'monitoring-report-directory=PATH', 'If set, a report will be written to this directory by Solver.Monitoring.Server (assuming it is enabled) when the process exits (optional).'],
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
-    ['', 'no-stop-monitoring-server', 'Do not stop the monitoring HTTP server when the optimal score is reached.'],
+    ['', 'no-stop-monitoring-server', 'Do not stop the monitoring HTTP server when the optimal score is reached (primarily useful for debugging/developing the server output).'],
     ['', 'no-print-results', 'Do not print top results.'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
     // Retry and timing options.
@@ -92,6 +94,16 @@ if(options.hasOwnProperty('port')) {
 
   if(!configuration.port) {
     console.error('--port requires an integral argument.');
+
+    process.exit(2);
+  }
+}
+
+if(options.hasOwnProperty('monitoring-report-directory')) {
+  configuration.monitoringReportDirectory = options['monitoring-report-directory'];
+
+  if(!configuration.monitoringReportDirectory) {
+    console.error('--monitoring-report-directory requires a non-blank argument.');
 
     process.exit(2);
   }
@@ -288,6 +300,24 @@ if(!commandInfo) {
 ////////////////////////////////////////////////////////////////////////////////
 // Validate the configuration.
 
+if(configuration.monitoringReportDirectory) {
+  var validMonitoringReportDirectory;
+
+  try {
+    var monitoringReportDirectoryStats = FS.statSync(configuration.monitoringReportDirectory);
+
+    validMonitoringReportDirectory = monitoringReportDirectoryStats.isDirectory();
+  } catch(e) {
+    validMonitoringReportDirectory = false;
+  }
+
+  if(!validMonitoringReportDirectory) {
+    console.error('The --monitoring-report-directory option requires a path to an existing directory.')
+
+    process.exit(2);
+  }
+}
+
 if(configuration.postResults) {
   if(!configuration.auth) {
     console.error('The --auth option is required if --post-results is set.');
@@ -410,6 +440,30 @@ function executeMapByDateAndDifficultyCommand(client, configuration, commandPara
 
 /**
  *
+ * @param {Object} configuration
+ * @param {Boolean} [exitWhenFinished]
+ */
+function handleMonitoringCleanup(configuration, exitWhenFinished) {
+  if(configuration.monitoringReportDirectory) {
+    MultiprocessingCoordinator.writeMonitoringReport(configuration.monitoringReportDirectory, stopMonitoringServerIfSpecified);
+  } else {
+    stopMonitoringServerIfSpecified();
+  }
+
+  ////////////////////
+  // Helper functions.
+
+  function stopMonitoringServerIfSpecified() {
+    if(configuration.stopMonitoringServer || exitWhenFinished) {
+      MultiprocessingCoordinator.stopAll();
+
+      process.exit(0);
+    }
+  }
+}
+
+/**
+ *
  * @param {PatheryAPI.Client} client
  * @param {Map} map
  * @param {Object} configuration
@@ -427,6 +481,14 @@ function solveMap(client, map, configuration) {
     MultiprocessingCoordinator.startWorker(map.graph(), map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
   }
 
+  process.on('SIGINT', function () {
+    console.log('SIGINT received...exiting.');
+
+    MultiprocessingCoordinator.stopWorkers();
+
+    handleMonitoringCleanup(configuration, true);
+  });
+
   ////////////////////
   // Event handlers.
 
@@ -436,11 +498,9 @@ function solveMap(client, map, configuration) {
     if(topResultTracker.isOptimal()) {
       console.log('Reached optimal score...stopping workers.');
 
-      if(configuration.stopMonitoringServer) {
-        MultiprocessingCoordinator.stopAll();
-      } else {
-        MultiprocessingCoordinator.stopWorkers();
-      }
+      MultiprocessingCoordinator.stopWorkers();
+
+      handleMonitoringCleanup(configuration);
     }
   }
 }
