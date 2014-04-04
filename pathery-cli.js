@@ -486,14 +486,14 @@ function solveMap(client, map, configuration) {
     // Helper functions.
 
     function stopMonitoringServerIfSpecified() {
-      if(configuration.stopMonitoringServer) {
-        MultiprocessingCoordinator.stopAll();
-      } else if(exitWhenFinished) {
+      if(exitWhenFinished) {
         MultiprocessingCoordinator.stopAll();
 
         // If we don't exit, then we will have to wait for any in-transit HTTP requests, as well as an requests to the
         // Solver.Monitoring.Server where 'Connection: keep-alive' is being honored.
         process.exit(0);
+      } else if(configuration.stopMonitoringServer) {
+        MultiprocessingCoordinator.stopAll();
       }
     }
   }
