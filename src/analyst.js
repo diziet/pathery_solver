@@ -856,6 +856,8 @@ exports.place_greedy2 = place_greedy2;
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
 function place_greedy(board, cur_blocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
+  var i;
+
   //console.log("PLACE GREEDY!!!" )
   //console.log("DEPTH: " + depth)
   if (graph == undefined){
@@ -874,7 +876,26 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   var best_blocks = [];
 
   var current_blocks = graph.dictify_blocks(cur_blocks);
-  var solution = find_pathery_path(graph, current_blocks, previous_solution, previous_block)
+  var solution = find_pathery_path(graph, current_blocks, previous_solution, previous_block);
+
+  if(ExploratoryUtilities.configuration.assertFindPathShortcutCorrect) {
+    var pathUsingShortcuts = solution.paths[0];
+
+    if(pathUsingShortcuts) {
+      var solutionSansShortcuts = find_pathery_path(graph, current_blocks);
+      var pathSansShortcuts = solutionSansShortcuts.paths[0];
+
+      if(pathUsingShortcuts.length === pathSansShortcuts.length) {
+        for(i = 0; i < pathUsingShortcuts.length; i++) {
+          if(pathUsingShortcuts[i] !== pathSansShortcuts[i]) {
+            throw new Error('invariant');
+          }
+        }
+      } else {
+        throw new Error('invariant');
+      }
+    }
+  }
 
   // Unable to find solution, so push last block to blocked list  
   if (solution.paths[0] == null){
@@ -888,7 +909,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   }
   var possible_next_moves = Object.keys(solution.relevant_blocks)
 
-  for (var i = 0; i < possible_next_moves.length; i++) {
+  for (i = 0; i < possible_next_moves.length; i++) {
     // if (ExploratoryUtilities.random() > 0.70){
     //   continue;
     // }

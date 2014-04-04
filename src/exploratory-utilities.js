@@ -12,6 +12,7 @@ var _ = require('underscore');
 // Global(ish) configuration.
 
 module.exports.CONFIGURATION_DEFAULTS = {
+  assertFindPathShortcutCorrect: false,
   exhaustiveSearchDepth: 2,
   exhaustiveSearchDomain: 'combinatorial',
   monitorPort: 8018,
