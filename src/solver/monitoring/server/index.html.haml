@@ -14,7 +14,9 @@
     %script{ type: 'text/javascript' }
       != '\n//<![CDATA[\n' + indexJavaScriptContent + '\n//]]>\n'
 
-    %title Monitor
+    - var map = mapBeingMonitored();
+    - if(map)
+      %title Map #{map.id} Monitoring Log
   %body
     %main{ role: 'main' }
       .container

@@ -1,6 +1,7 @@
 // TODO: Various derived statistics.
 // TODO: Summary for all workers.
 // TODO: Interval summaries (e.g. last full minute, 5 minutes, hour).
+// TODO: Calculate the minimum number of moves on an empty map and display. Also might be worth doing for work outside of monitoring.
 // TODO: Something additional on exhaustive start...not sure what though.
 // TODO: Track statistics on improvement by exhaustive search.
 
@@ -25,6 +26,20 @@ var httpServer = null;
 
 /** @variable {WorkerJournal[]} */
 var workerJournals = [];
+
+/**
+ * The semantics on this are rather dubious as it is conceivable that in the future more than a single map may be
+ * monitored by the same Solver.Monitoring.Server. Avoid using where possible.
+ *
+ * @returns {WorkerJournal}
+ */
+function mapBeingMonitored() {
+  if(workerJournals.length > 0 && workerJournals[0].map) {
+    return workerJournals[0].map;
+  } else {
+    return null;
+  }
+}
 
 /**
  * Render the index.html.haml template, passing the final content to the provided onSuccessCallback.
@@ -53,6 +68,7 @@ module.exports.renderIndexHTML = function (onSuccessCallback, onErrorCallback) {
                   locals: {
                     indexCSSContent: indexCSSContent,
                     indexJavaScriptContent: indexJavaScriptContent,
+                    mapBeingMonitored: mapBeingMonitored,
                     strftime: strftime,
                     workerJournals: workerJournals
                   }
