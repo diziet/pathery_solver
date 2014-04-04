@@ -112,7 +112,6 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
   // Perform an exhaustive search and then _continue_ to perform exhaustive searches as long as the score keeps improving.
   if(doExhaustiveSearch) {
     var iterations = 1;
-    var startTime = Date.now();
     var lastExhaustiveSearchBlocks = _.extend({}, currBlocks);
     var lastExhaustiveSearchScore = currAnnealingScore;
 
@@ -123,18 +122,15 @@ module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) 
 
       lastExhaustiveSearchBlocks = graph.dictify_blocks(initialResult.solution);
 
-      // Analyst.place_greedy occasionally returns a score which is too high.
-      var checkedScore = Analyst.find_pathery_path(graph, lastExhaustiveSearchBlocks).value;
-
-      if(checkedScore > lastExhaustiveSearchScore) {
+      if(initialResult.score > lastExhaustiveSearchScore) {
         iterations++;
 
-        lastExhaustiveSearchScore = checkedScore;
+        lastExhaustiveSearchScore = initialResult.score;
       } else {
-        MonitoringClient.recordExhaustiveResult(checkedScore, iterations);
+        MonitoringClient.recordExhaustiveResult(initialResult.score, iterations);
 
         return {
-          score: checkedScore,
+          score: initialResult.score,
           solution: lastExhaustiveSearchBlocks
         }
       }
