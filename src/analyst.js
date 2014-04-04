@@ -855,6 +855,9 @@ exports.place_greedy2 = place_greedy2;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
+
+var assertFindPathShortcutCorrectWarningSent;
+
 function place_greedy(board, cur_blocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
   var i;
 
@@ -879,8 +882,13 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   var solution = find_pathery_path(graph, current_blocks, previous_solution, previous_block);
 
   if(ExploratoryUtilities.configuration.assertFindPathShortcutCorrect) {
-    var pathUsingShortcuts = solution.paths[0];
+    if(!assertFindPathShortcutCorrectWarningSent) {
+      assertFindPathShortcutCorrectWarningSent = true;
 
+      console.warn('ExploratoryUtilities.configuration.assertFindPathShortcutCorrect was set; performing shortcut checking');
+    }
+
+    var pathUsingShortcuts = solution.paths[0];
     if(pathUsingShortcuts) {
       var solutionSansShortcuts = find_pathery_path(graph, current_blocks);
       var pathSansShortcuts = solutionSansShortcuts.paths[0];
