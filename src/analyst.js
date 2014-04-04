@@ -352,25 +352,40 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     // and just use the previous version
 
     if (!graph.has_teleports){
-      var shortcut = false
-      for (var ii = 0, q = previous_solution.length; ii < q; ii++){
+      var ii;
+      var shortcut = false;
+
+      for (ii = 0, q = previous_solution.length; ii < q; ii++){
         block = previous_solution[ii]
         if (block == last_block_placed) {
-          shortcut = false
+          shortcut = false;
           break;
         }
         if (target_dict[block] == true){
 
           //console.log("DOING SHORTCUT!")
-          shortcut = previous_solution.slice(0, ii + 1)
-          previous_solution = previous_solution.slice(ii+1, previous_solution.length)
+          shortcut = true;
           break;
         }
       }
-      if (shortcut){
-        fullpath = fullpath.concat(shortcut)
-        index += 1
-        cur = [fullpath[fullpath.length -1]]
+      if (shortcut) {
+        cur = [previous_solution[ii]];
+
+        if(index === graph.checkpoints.length) {
+          if(ii + 1 !== previous_solution.length) {
+            // If we've reached the end, the previous solution better not have more stuff.
+            throw new Error('invariant');
+          }
+
+          fullpath = fullpath.concat(previous_solution);
+        } else {
+          fullpath = fullpath.concat(previous_solution.slice(0, ii));
+
+          previous_solution = previous_solution.slice(ii);
+        }
+
+        index++;
+
         continue;
       }
     }
