@@ -97,6 +97,18 @@ Map.prototype.url = function () {
 };
 
 /**
+ * The map score if no blocks have been placed.
+ *
+ * N.B.: It _is_ possible to get a lower score on the map by placing blocks in such a way that they force a beneficial
+ *     teleport.
+ *
+ * @returns {Number}
+ */
+Map.prototype.virginalScore = function () {
+  return this._virginalScore || (this._virginalScore = Analyst.find_pathery_path(this.graph(), []).value);
+};
+
+/**
  * Adapted from Therapist.parse_board for use in Map constructor.
  *
  * @private

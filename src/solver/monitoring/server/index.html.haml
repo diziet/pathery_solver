@@ -44,6 +44,8 @@
                           %a{ href: url }= linkContent
                         - else
                           %span= linkContent
+                      %dt Virginal score
+                      %dd= workerJournal.map.virginalScore()
                       %dt Start time
                       %dd
                         %time{ datatime: workerJournal.startTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.startTime)

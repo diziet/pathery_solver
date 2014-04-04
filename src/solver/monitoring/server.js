@@ -1,7 +1,6 @@
 // TODO: Various derived statistics.
 // TODO: Summary for all workers.
 // TODO: Interval summaries (e.g. last full minute, 5 minutes, hour).
-// TODO: Calculate the minimum number of moves on an empty map and display. Also might be worth doing for work outside of monitoring.
 // TODO: Something additional on exhaustive start...not sure what though.
 // TODO: Track statistics on improvement by exhaustive search.
 
