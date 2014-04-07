@@ -59,7 +59,7 @@ var configurationAttributeToBenchmarkName = 'placeBlockVersion';
  *
  * @variable {Array}
  */
-var configurationAttributeToBenchmarkDomain = ['Oliver', 'Michael'];
+var configurationAttributeToBenchmarkDomain = ['Oliver', 'Michael01', 'Michael02'];
 
 ////////////////////////////////////////////////////////////////////////////////
 // Setup and sanity checks.

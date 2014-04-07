@@ -670,7 +670,7 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
     };
 
     break;
-  case 'Michael':
+  case 'Michael01':
     placeBlock = function (graph, currBlocks) {
       var pathSansBlock = find_pathery_path(graph, currBlocks);
       // REVIEW: Might also try passing in a relevant block parameter to find_pathery_path. That would add the
@@ -683,6 +683,65 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
 
       while (relevantBlocks.length > 2) {
         var newBlockIdx = Math.floor((relevantBlocks.length - 2) * ExploratoryUtilities.random()) + 1;
+        newBlockKey = relevantBlocks[newBlockIdx];
+
+        if (graph.serial_board[newBlockKey] === ' ') {
+          currBlocks[newBlockKey] = true;
+
+          updatedPath = find_pathery_path(graph, currBlocks);
+
+          if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+            delete currBlocks[newBlockKey];
+
+            relevantBlocks.splice(newBlockIdx, 1);
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
+          }
+        }
+      }
+
+      // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
+      // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
+      var maxRandomBlock = graph.m * graph.n - 1;
+      while(true) {
+        newBlockKey = Math.floor(maxRandomBlock * ExploratoryUtilities.random());
+
+        if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+          currBlocks[newBlockKey] = true;
+
+          updatedPath = find_pathery_path(graph, currBlocks);
+
+          if(updatedPath === null || !updatedPath.value) {
+            delete currBlocks[newBlockKey];
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
+          }
+        }
+      }
+    };
+
+    break;
+  case 'Michael02':
+    // Differs from Michael01: Pass in a relevant_blocks parameter to find_pathery_path. This adds the possibility of
+    // placing blocks after a teleport and also removes duplicate blocks. The latter though points to a reason this may
+    // not be a good idea...in Michael01, blocks which are hit more than once are more likely to be chosen.
+    placeBlock = function (graph, currBlocks) {
+      var relevantBlocksLookup = {};
+      find_pathery_path(graph, currBlocks, undefined, undefined, relevantBlocksLookup);
+      var relevantBlocks = Object.keys(relevantBlocksLookup);
+      var newBlockKey;
+      var updatedPath;
+
+      while (relevantBlocks.length > 0) {
+        var newBlockIdx = Math.floor((relevantBlocks.length) * ExploratoryUtilities.random());
         newBlockKey = relevantBlocks[newBlockIdx];
 
         if (graph.serial_board[newBlockKey] === ' ') {
