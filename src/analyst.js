@@ -304,7 +304,7 @@ PatheryGraph.prototype.find_path = function(
 // previous solution is an array of keyified blocks 
 // ie.  [1,55,330] which represents the previous solution for path caching
 
-function find_full_path(graph, blocks, reversed, previous_solution, last_block_placed){
+function find_full_path(graph, blocks, reversed, previous_solution, last_block_placed, relevant_blocks){
   //console.log("FIND FULL PATH")
   block_in_question = 210000
   //previous_solution = []
@@ -327,8 +327,6 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
   // TODO: REMOVE BRIDGES FROM RELEVANT BLOCKS (i.e. take care of all those - values in one sweep)
   // http://www.geeksforgeeks.org/bridge-in-a-graph/
   // http://en.wikipedia.org/wiki/Bridge_(graph_theory)#Tarjan.27s_Bridge-finding_algorithm
-
-  var relevant_blocks = {}; // The set of blocks which blocking may help
 
   while (index < graph.checkpoints.length  + 1) {
     //console.log("NEW CHECKPOINT")
@@ -393,7 +391,10 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     //console.log("pathObj")
     //console.log(pathObj)
     if (pathObj == null) {
-      return {path: null, value: PATH_BLOCKED_CONSTANT, relevant_blocks: {}};
+      return {
+        path: null,
+        value: PATH_BLOCKED_CONSTANT
+      };
     }
     var out_blocks = null;
 
@@ -402,9 +403,10 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     // only calculate when not brute forcing
     var path_len = pathObj.numel;
     var path = pathObj.path;
-    for (var k = path_len - 1; k >= 0; k--) {
-      block = path[k];
-      relevant_blocks[block] = true;
+    if(relevant_blocks) {
+      for (var k = path_len - 1; k >= 0; k--) {
+        relevant_blocks[path[k]] = true;
+      }
     }
 
     // push things onto actual path, until we hit a teleport
@@ -443,40 +445,33 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
   //   console.log("SCORE")
   //   console.log(fullpath.length)
   // }
-  for (var k = fullpath.length - 1; k >= 0; k--) {
-    //console.log(fullpath[k])
-    //relevant_blocks[fullpath[k]] = true;
-  }
   return {
     path: fullpath,
-    value: solution_length,
-    relevant_blocks: relevant_blocks
+    value: solution_length
   };
 }
 
-function find_pathery_path(graph, blocks, previous_solution, last_block_placed){
-  var relevant_blocks = {};
+function find_pathery_path(graph, blocks, previous_solution, last_block_placed, relevant_blocks){
   var paths = [];
   var values = [];
   //console.log("FIND PATHERY PATH")
   //console.log(last_block_placed)
   if (graph.has_regular) {
-    solution_green = find_full_path(graph, blocks, false, previous_solution, last_block_placed);
+    solution_green = find_full_path(graph, blocks, false, previous_solution, last_block_placed, relevant_blocks);
     paths.push(solution_green.path);
     values.push(solution_green.value);
-    for (var block in solution_green.relevant_blocks) {relevant_blocks[block] = true;}
   }
 
   if (graph.has_reverse) {
-    solution_red = find_full_path(graph, blocks, true, previous_solution, last_block_placed);
+    solution_red = find_full_path(graph, blocks, true, previous_solution, last_block_placed, relevant_blocks);
     paths.push(solution_red.path);
     values.push(solution_red.value);
-    for (var block in solution_red.relevant_blocks) {relevant_blocks[block] = true;}
   }
-  return {paths: paths,
-          values: values,
-          value: sum_values(values),
-          relevant_blocks: relevant_blocks};
+  return {
+    paths: paths,
+    values: values,
+    value: sum_values(values)
+  };
 }
 
 exports.find_pathery_path = find_pathery_path;
@@ -518,11 +513,11 @@ function compute_values(board, cur_blocks, cb) {
     var graph = new PatheryGraph(board);
 
     var current_blocks = graph.dictify_blocks(cur_blocks);
-    var solution = find_pathery_path(graph, current_blocks);
+    var relevant_blocks = {};
+    var solution = find_pathery_path(graph, current_blocks, undefined, undefined, relevant_blocks);
 
     var solution_path = solution.paths;
     var solution_value = solution.value;
-    var relevant_blocks = solution.relevant_blocks;
 
     var find_pathery_path_count = 0;
 
@@ -533,35 +528,38 @@ function compute_values(board, cur_blocks, cb) {
         for (var j = 0; j < graph.m; j++) {
             var block = graph.keyify_coordinates(i, j);
             if (graph.serial_board[block] == ' ') {
-                if (block in current_blocks) {
+                if(isNaN(solution_value)) {
+                  if(block in current_blocks) {
                     blocking = true;
-                    if (isNaN(solution_value)) {
-                      diff = '-';
-                    } else {
-                      delete current_blocks[block];
-                      value = find_pathery_path(graph, current_blocks).value;
-                      find_pathery_path_count++;
-                      diff = solution_value - value;
-                      current_blocks[block] = true;
-                    }
-                } else if (block in relevant_blocks) {
+                    diff = '-';
+                  } else {
                     blocking = false;
-                    if (isNaN(solution_value)) {
-                      diff = '';
-                    } else {
-                      current_blocks[block] = true;
-                      value = find_pathery_path(graph, current_blocks).value;
-                      find_pathery_path_count++;
-                      diff = value - solution_value;
-                      if (isNaN(diff)) {diff = '-';}
-                      delete current_blocks[block];
-
-                      if (Math.abs(diff) > 2222222222) {diff = '-';} // TODO : make less hackish
-                    }
+                    diff = '';
+                  }
                 } else {
+                  if (block in current_blocks) {
+                    blocking = true;
+                    delete current_blocks[block];
+                    value = find_pathery_path(graph, current_blocks).value;
+                    find_pathery_path_count++;
+                    diff = solution_value - value;
+                    current_blocks[block] = true;
+                  } else if (block in relevant_blocks) {
+                    blocking = false;
+                    current_blocks[block] = true;
+                    value = find_pathery_path(graph, current_blocks).value;
+                    find_pathery_path_count++;
+                    diff = value - solution_value;
+                    if (isNaN(diff)) {diff = '-';}
+                    delete current_blocks[block];
+
+                    if (Math.abs(diff) > 2222222222) {diff = '-';} // TODO : make less hackish
+                  } else {
                     diff = '';
                     blocking = false;
+                  }
                 }
+
                 values_list.push({i: i, j: j, val: diff, blocking: blocking});
             }
         }
@@ -675,6 +673,10 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
   case 'Michael':
     placeBlock = function (graph, currBlocks) {
       var pathSansBlock = find_pathery_path(graph, currBlocks);
+      // REVIEW: Might also try passing in a relevant block parameter to find_pathery_path. That would add the
+      //     possibility of placing blocks after a teleport and also remove duplicate blocks. The latter though points
+      //     to a reason it might not be a good idea...this way blocks which are hit more than once are more likely
+      //     to be chosen.
       var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
       var newBlockKey;
       var updatedPath;
@@ -879,7 +881,8 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   var best_blocks = [];
 
   var current_blocks = graph.dictify_blocks(cur_blocks);
-  var solution = find_pathery_path(graph, current_blocks, previous_solution, previous_block);
+  var relevant_blocks = {};
+  var solution = find_pathery_path(graph, current_blocks, previous_solution, previous_block, relevant_blocks);
 
   if(ExploratoryUtilities.configuration.assertFindPathShortcutCorrect) {
     if(!assertFindPathShortcutCorrectWarningSent) {
@@ -905,9 +908,14 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
     }
   }
 
+  var possible_next_moves;
+
   // Unable to find solution, so push last block to blocked list  
   if (solution.paths[0] == null){
-    blocked_list.push(previous_block)
+    blocked_list.push(previous_block);
+    possible_next_moves = [];
+  } else {
+    possible_next_moves = Object.keys(relevant_blocks);
   }
   // clone the block list so different iterations of BFS would not interfere with each other
   blocked_list = blocked_list.slice(0, blocked_list.length)
@@ -915,7 +923,6 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
   if (depth == 0){
     return [cur_blocks, solution.value]
   }
-  var possible_next_moves = Object.keys(solution.relevant_blocks)
 
   for (i = 0; i < possible_next_moves.length; i++) {
     // if (ExploratoryUtilities.random() > 0.70){
