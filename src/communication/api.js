@@ -271,6 +271,9 @@ module.exports.Client.prototype.post = function (path, options) {
     throw new Error('invariant');
   }
 
+  // Required for blue.pathery.net.
+  headers['Content-Length'] = 0;
+
   var request = http.request(
       {
         headers: headers,
