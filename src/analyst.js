@@ -677,12 +677,12 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
       //     possibility of placing blocks after a teleport and also remove duplicate blocks. The latter though points
       //     to a reason it might not be a good idea...this way blocks which are hit more than once are more likely
       //     to be chosen.
-      var relevantBlocks = pathSansBlock.paths[0].slice(1, -1);
+      var relevantBlocks = pathSansBlock.paths[0];
       var newBlockKey;
       var updatedPath;
 
-      while (relevantBlocks.length > 0) {
-        var newBlockIdx = Math.floor((relevantBlocks.length) * ExploratoryUtilities.random());
+      while (relevantBlocks.length > 2) {
+        var newBlockIdx = Math.floor((relevantBlocks.length - 2) * ExploratoryUtilities.random()) + 1;
         newBlockKey = relevantBlocks[newBlockIdx];
 
         if (graph.serial_board[newBlockKey] === ' ') {
