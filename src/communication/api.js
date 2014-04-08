@@ -1,5 +1,6 @@
 /** @module pathery/communication/api */
 
+var fs = require('fs');
 var http = require('http');
 var QueryString = require('querystring');
 
@@ -71,6 +72,7 @@ module.exports.Client = function (attributes) {
   attributes = _.extend(
       {
         hostname: module.exports.Client.DEFAULT_HOSTNAME,
+        mapsCache: module.exports.Client.DEFAULT_MAPS_CACHE,
         port: module.exports.Client.DEFAULT_PORT
       },
       attributes
@@ -82,6 +84,9 @@ module.exports.Client = function (attributes) {
   /** @member {String} */
   this.hostname = attributes['hostname'];
 
+  /** @member {String} */
+  this.mapsCache = attributes['mapsCache'];
+
   /** @member {Number} */
   this.port = attributes['port'];
 
@@ -90,39 +95,55 @@ module.exports.Client = function (attributes) {
 };
 
 module.exports.Client.DEFAULT_HOSTNAME = 'www.pathery.com';
+module.exports.Client.DEFAULT_MAPS_CACHE = fs.realpathSync(__dirname + '/../..') + '/data/maps';
 module.exports.Client.DEFAULT_PORT = 80;
 
 /**
  *
  * @param {Number} mapId
- * @param {{preventCaching: Boolean}} [options]
+ * @param {{noLocalCache: Boolean, preventHTTPCaching: Boolean}} [options]
  * @returns {Q.Promise} Resolves with a Map object. May fail with an APIError error if the specified map does not exist (with APIError#response.statusCode == 404).
  */
 module.exports.Client.prototype.getMap = function (mapId, options) {
-  var requestPath = '/a/map/' + mapId + '.js';
-  var self = this;
+  var noCache = this.mapsCache === null || options && options.noLocalCache;
+  var cachedMap = !noCache && this.getMapFromCache(mapId);
 
-  // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
-  if(options && options.preventCaching) {
-    requestPath += '?' + Date.now();
+  if(cachedMap) {
+    console.info('Loaded Map', mapId, 'from the local cache.');
+
+    return Q(cachedMap);
+  } else {
+    var requestPath = '/a/map/' + mapId + '.js';
+    var self = this;
+
+    // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
+    if(options && options.preventHTTPCaching) {
+      requestPath += '?' + Date.now();
+    }
+
+    return this.getJSON(requestPath).then(function (rawMapObject) {
+      var map = new Map(rawMapObject, { hostname: self.hostname, port: self.port, protocol: PROTOCOL });
+
+      if(!noCache) {
+        self.addMapToCache(map);
+      }
+
+      return map;
+    });
   }
-
-  return this.getJSON(requestPath).then(function (rawMapObject) {
-    return new Map(rawMapObject, { hostname: self.hostname, port: self.port, protocol: PROTOCOL });
-  });
 };
 
 /**
  *
  * @param {Date} date
- * @param {{preventCaching: Boolean}} [options]
+ * @param {{preventHTTPCaching: Boolean}} [options]
  * @returns {Q.Promise}
  */
 module.exports.Client.prototype.getMapIdsByDate = function (date, options) {
   var requestPath = '/a/mapsbydate/' + strftime('%Y-%m-%d', date) + '.js';
 
   // Prevent caching by CloudFlare (which appears to ignore Cache-Control from the client).
-  if(options && options.preventCaching) {
+  if(options && options.preventHTTPCaching) {
     requestPath += '?' + Date.now();
   }
 
@@ -305,4 +326,57 @@ module.exports.Client.prototype.post = function (path, options) {
   request.end();
 
   return deferred.promise;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Cache helper functions.
+
+/**
+ *
+ * @private
+ *
+ * @param {Map} map
+ */
+module.exports.Client.prototype.addMapToCache = function (map) {
+  if(fs.existsSync(this.mapsCache)) {
+    var cachedContent = JSON.stringify(map.serializableHash());
+
+    fs.writeFileSync(this.getPathForCachedMap(map.id), cachedContent);
+  }
+};
+
+/**
+ *
+ * @private
+ *
+ * @param {Number} mapId
+ * @returns {Map}
+ */
+module.exports.Client.prototype.getMapFromCache = function (mapId) {
+  if(fs.existsSync(this.mapsCache)) {
+    var cachedContent;
+
+    try {
+      cachedContent = fs.readFileSync(this.getPathForCachedMap(mapId));
+    } catch(e) {
+      return null;
+    }
+
+    return Map.build(JSON.parse(cachedContent));
+  } else {
+    console.warn('The mapsCache path (', this.mapsCache, ') did not exist.');
+
+    return null;
+  }
+};
+
+/**
+ *
+ * @private
+ *
+ * @param {Number} mapId
+ * @returns {String}
+ */
+module.exports.Client.prototype.getPathForCachedMap = function (mapId) {
+  return this.mapsCache + '/' + this.hostname + '-' + this.port + '-' + mapId + '.json';
 };

@@ -17,6 +17,7 @@ const DIFFICULTY_DOMAIN_DESCRIPTION = 'an integer between 0 and ' + (Object.keys
 
 var configuration = {
   hostname: PatheryAPI.Client.DEFAULT_HOSTNAME,
+  mapsCache: PatheryAPI.Client.DEFAULT_MAPS_CACHE,
   port: PatheryAPI.Client.DEFAULT_PORT,
   monitoringReportDirectory: null,
   optimalScore: null,
@@ -39,6 +40,7 @@ var getopt = new Getopt([
     ['', 'config-file=PATH', 'Path to a JSON file with a hash of values which will be merged into configuration. See config/cli.example.json for an example.'],
     // Pathery server options.
     ['', 'hostname=STRING', 'The hostname for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_HOSTNAME + ').'],
+    ['', 'maps-cache=STRING', 'Path where maps are stored locally (default: ' + PatheryAPI.Client.DEFAULT_MAPS_CACHE + '). If empty, the local cache will not be used.'],
     ['', 'port=INT', 'The port for the pathery server (default: ' + PatheryAPI.Client.DEFAULT_PORT + ').'],
     // Miscellaneous options.
     ['', 'monitoring-report-directory=PATH', 'If set, a report will be written to this directory by Solver.Monitoring.Server (assuming it is enabled) when the process exits (optional).'],
@@ -88,6 +90,16 @@ if(options.hasOwnProperty('config-file')) {
 
 if(options.hasOwnProperty('hostname')) {
   configuration.hostname = options['hostname'];
+}
+
+if(options.hasOwnProperty('maps-cache')) {
+  var rawMapsCache = options['maps-cache'];
+
+  if(rawMapsCache) {
+    configuration.mapsCache = rawMapsCache;
+  } else {
+    configuration.mapsCache = null;
+  }
 }
 
 if(options.hasOwnProperty('port')) {
@@ -379,7 +391,7 @@ function executeMapByIdCommand(client, configuration, commandParameters) {
    * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
    */
   function doGetMapAndSolve(wasNotDelayed) {
-    client.getMap(mapId, { preventCaching: !wasNotDelayed }).done(
+    client.getMap(mapId, { preventHTTPCaching: !wasNotDelayed }).done(
         function (map) {
           console.log('Successfully retrieved map', map.id, 'at', new Date());
 
@@ -417,7 +429,7 @@ function executeMapByDateAndDifficultyCommand(client, configuration, commandPara
    * @param {Boolean} [wasNotDelayed] - Will be nil (i.e. not truthy) if called from a setTimeout.
    */
   function doGetMapAndSolve(wasNotDelayed) {
-    client.getMapByDateAndDifficulty(date, difficulty, { preventCaching: !wasNotDelayed }).done(
+    client.getMapByDateAndDifficulty(date, difficulty, { preventHTTPCaching: !wasNotDelayed }).done(
         function (map) {
           console.log('Successfully retrieved map', map.id, 'at', new Date());
 
