@@ -7,6 +7,8 @@ var ScoringDistribution = module.exports = function () {
   /**
    * Stored for convenience; obviously derivable from distribution.
    *
+   * N.B.: Modified externally by e.g. SolverStageJournal#merge.
+   *
    * @member {Number}
    */
   this.max = null;

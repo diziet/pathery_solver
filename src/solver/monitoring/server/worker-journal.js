@@ -1,3 +1,5 @@
+var _ = require('underscore');
+
 var SolverStageJournal = require('./solver-stage-journal.js');
 
 /**
@@ -12,10 +14,39 @@ var WorkerJournal = module.exports = function (worker, map) {
   this.map = map;
   this.startTime = new Date();
 
+  /** @member {SolverStageJournal} */
   this.annealingJournal = new SolverStageJournal();
+
+  /** @member {SolverStageJournal} */
   this.exhaustiveJournal = new SolverStageJournal();
 
   this.lastMessage = null;
+};
+
+/**
+ * Merge a WorkerJournal into this one. The current WorkerJournal will be mutated.
+ *
+ * @param {WorkerJournal} other
+ */
+WorkerJournal.prototype.merge = function (other) {
+  if(this.worker !== null) {
+    throw new Error('A WorkerJournal may only be merged into if it does not have a worker.');
+  }
+
+  if(this.map.id != other.map.id) {
+    throw new Error('WorkerJournals may only be merged if they have the same map.');
+  }
+
+  if(this.startTime === null || other.startTime < this.startTime) {
+    this.startTime = other.startTime;
+  }
+
+  this.annealingJournal.merge(other.annealingJournal);
+  this.exhaustiveJournal.merge(other.exhaustiveJournal);
+
+  if(this.lastMessage === null || other.lastMessage.time > this.lastMessage.time) {
+    this.lastMessage = _.extend({}, other.lastMessage);
+  }
 };
 
 /**
@@ -48,7 +79,7 @@ WorkerJournal.prototype.onMonitoringUpdateMessage = function (monitoringMessage)
 
 WorkerJournal.prototype.serializableHash = function () {
   return {
-    workerPID: this.worker.pid,
+    workerPID: this.worker && this.worker.pid,
     mapId: this.map.id,
     startTime: this.startTime,
     annealingJournal: this.annealingJournal.serializableHash(),
@@ -63,22 +94,5 @@ WorkerJournal.prototype.serializableHash = function () {
  * @returns {{score: Number, time: Date}}
  */
 WorkerJournal.prototype.getTopScoreInfo = function () {
-  if(this.annealingJournal.isBlank()) {
-    return null;
-  } else {
-    var annealingTopScore = this.annealingJournal.scoringDistribution.max;
-    var exhaustiveTopScore = !this.exhaustiveJournal.isBlank() && this.exhaustiveJournal.scoringDistribution.max;
-
-    if(exhaustiveTopScore && (exhaustiveTopScore > annealingTopScore || (exhaustiveTopScore === annealingTopScore && this.exhaustiveJournal.topScoreTime < this.annealingJournal.topScoreTime))) {
-      return {
-        score: exhaustiveTopScore,
-        time: this.exhaustiveJournal.topScoreTime
-      }
-    } else {
-      return {
-        score: annealingTopScore,
-        time: this.annealingJournal.topScoreTime
-      }
-    }
-  }
+  return this.annealingJournal.getCombinedTopScoreInfo(this.exhaustiveJournal);
 };

@@ -14,12 +14,71 @@ var SolverStageJournal = module.exports = function () {
 };
 
 /**
+ * Convenience mechanism to get the top score from between this SolverStageJournal and another.
+ *
+ * @param {SolverStageJournal} other
+ * @returns {{score: Number, time: Date}}
+ */
+SolverStageJournal.prototype.getCombinedTopScoreInfo = function (other) {
+  if(this.isBlank() && other.isBlank()) {
+    return null;
+  } else {
+    var topJournal;
+
+    if(other.isBlank()) {
+      topJournal = this;
+    } else if(this.isBlank()) {
+      topJournal = other;
+    } else {
+      if(this.scoringDistribution.max > other.scoringDistribution.max) {
+        topJournal = this;
+      } else if(this.scoringDistribution.max < other.scoringDistribution.max) {
+        topJournal = other;
+      } else if(this.topScoreTime < other.topScoreTime) {
+        topJournal = this;
+      } else {
+        topJournal = other;
+      }
+    }
+
+    return {
+      score: topJournal.scoringDistribution.max,
+      time: topJournal.topScoreTime
+    };
+  }
+};
+
+/**
  * Have any scores been processed yet?
  *
  * @returns {Boolean}
  */
 SolverStageJournal.prototype.isBlank = function () {
   return this.topScoreTime === null;
+};
+
+/**
+ * Merge a SolverStageJournal into this one. The current SolverStageJournal will be mutated.
+ *
+ * @param {SolverStageJournal} other
+ */
+SolverStageJournal.prototype.merge = function (other) {
+  var combinedTopScoreInfo = this.getCombinedTopScoreInfo(other);
+
+  for(var i = 0; i < other.scoringDistribution.distribution.length; i++) {
+    var otherCount = other.scoringDistribution.distribution[i];
+
+    if(otherCount) {
+      this.scoringDistribution.distribution[i] = (this.scoringDistribution.distribution[i] || 0) + otherCount;
+    }
+  }
+
+  this.runTime += other.runTime;
+
+  if(combinedTopScoreInfo) {
+    this.scoringDistribution.max = combinedTopScoreInfo.score;
+    this.topScoreTime = combinedTopScoreInfo.time;
+  }
 };
 
 /**

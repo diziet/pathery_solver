@@ -14,92 +14,123 @@
     %script{ type: 'text/javascript' }
       != '\n//<![CDATA[\n' + indexJavaScriptContent + '\n//]]>\n'
 
-    - var map = mapBeingMonitored();
-    - if(map)
-      %title Map #{map.id} Monitoring Log
+    - if(aggregatedWorkerJournal)
+      %title Map #{aggregatedWorkerJournal.map.id} Monitoring Log
   %body
     %main{ role: 'main' }
       .container
-        %section
-          %h2 Workers
+        - if(aggregatedWorkerJournal)
+          %section
+            %h2 Summary
+            .row
+              %section.col-xs-6
+                %dl.dl-horizontal
+                  %dt Map
+                  %dd
+                    - var linkContent = aggregatedWorkerJournal.map.id + ' (' + aggregatedWorkerJournal.map.dateString() + ' ' + aggregatedWorkerJournal.map.name + ')';
+                    - var url = aggregatedWorkerJournal.map.url();
+                    - if(url)
+                      %a{ href: url }= linkContent
+                    - else
+                      %span= linkContent
+                  %dt Virginal score
+                  %dd= aggregatedWorkerJournal.map.virginalScore()
+                  %dt Start time
+                  %dd
+                    %time{ datatime: aggregatedWorkerJournal.startTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', aggregatedWorkerJournal.startTime)
+                  - var topScoreInfo = aggregatedWorkerJournal.getTopScoreInfo();
+                  - if(topScoreInfo)
+                    %dt Top Score
+                    %dd= topScoreInfo.score
+                    %dt Top Score At
+                    %dd
+                      %time{ datatime: topScoreInfo.time.toISOString() }
+                        = strftime('%Y-%m-%d %H:%M:%S', topScoreInfo.time)
+                        %span (after #{(topScoreInfo.time - aggregatedWorkerJournal.startTime) / 1000} seconds)
+              %section.col-xs-6
+                %h4 Last Message
+                %dl.dl-horizontal
+                  %dt Type
+                  %dd= aggregatedWorkerJournal.lastMessage.type
+                  %dt Action
+                  %dd= aggregatedWorkerJournal.lastMessage.action
+                  %dt Time
+                  %dd
+                    %time{ datatime: aggregatedWorkerJournal.lastMessage.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', aggregatedWorkerJournal.lastMessage.time)
+                  %dt Elapsed (s)
+                  %dd= ((new Date()) - aggregatedWorkerJournal.lastMessage.time) / 1000
+          %section
+            %h2 Workers
+            %ul.nav.nav-tabs
+              - each workerJournal, idx in combinedWorkerJournals
+                %li{ class: (idx == 0 ? 'active' : null) }
+                  %a{ href: '#worker-' + (workerJournal.worker ? workerJournal.worker.pid : 'aggregate'), 'data-toggle': 'tab', 'data-tab-history': 'true', 'data-tab-history-changer': 'push', 'data-tab-history-update-url': 'true' } #{ (workerJournal.worker ? workerJournal.worker.pid : 'Aggregate') }
+            .tab-content
+              - each workerJournal, idx in combinedWorkerJournals
+                .worker.tab-pane{ class: (idx == 0 ? 'active' : null), id: 'worker-' + (workerJournal.worker ? workerJournal.worker.pid : 'aggregate') }
+                  - if(workerJournal.worker)
+                    %h3 Worker #{workerJournal.worker.pid}
+                  - else
+                    %h3 Aggregate
 
-          %ul.nav.nav-tabs
-            - each workerJournal, idx in workerJournals
-              %li{ class: (idx == 0 ? 'active' : null) }
-                %a{ href: '#worker-' + workerJournal.worker.pid, 'data-toggle': 'tab', 'data-tab-history': 'true', 'data-tab-history-changer': 'push', 'data-tab-history-update-url': 'true' } #{ workerJournal.worker.pid }
-          .tab-content
-            - each workerJournal, idx in workerJournals
-              .worker.tab-pane{ class: (idx == 0 ? 'active' : null), id: 'worker-' + workerJournal.worker.pid, 'data-worker-pid': workerJournal.worker.pid }
-                %h3 Worker #{workerJournal.worker.pid}
+                  .row
+                    %section.col-xs-6
+                      %dl
+                        - var topScoreInfo = workerJournal.getTopScoreInfo();
+                        - if(topScoreInfo)
+                          %dt Top Score
+                          %dd= topScoreInfo.score
+                          %dt Top Score At
+                          %dd
+                            %time{ datatime: topScoreInfo.time.toISOString() }
+                              = strftime('%Y-%m-%d %H:%M:%S', topScoreInfo.time)
+                              %span (after #{(topScoreInfo.time - workerJournal.startTime) / 1000} seconds)
 
-                .row
-                  %section.col-xs-6
-                    %h4 General information
-                    %dl.dl-horizontal
-                      %dt Map
-                      %dd
-                        - var linkContent = workerJournal.map.id + ' (' + workerJournal.map.dateString() + ' ' + workerJournal.map.name + ')';
-                        - var url = workerJournal.map.url();
-                        - if(url)
-                          %a{ href: url }= linkContent
-                        - else
-                          %span= linkContent
-                      %dt Virginal score
-                      %dd= workerJournal.map.virginalScore()
-                      %dt Start time
-                      %dd
-                        %time{ datatime: workerJournal.startTime.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.startTime)
-                      - var topScoreInfo = workerJournal.getTopScoreInfo();
-                      - if(topScoreInfo)
-                        %dt Top Score
-                        %dd= topScoreInfo.score
-                        %dt Top Score At
-                        %dd
-                          %time{ datatime: topScoreInfo.time.toISOString() }
-                            = strftime('%Y-%m-%d %H:%M:%S', topScoreInfo.time)
-                            %span (after #{(topScoreInfo.time - workerJournal.startTime) / 1000} seconds)
-
-                  %section.col-xs-6
-                    %h4 Last Message
-                    %dl.dl-horizontal
-                      %dt Type
-                      %dd= workerJournal.lastMessage.type
-                      %dt Action
-                      %dd= workerJournal.lastMessage.action
-                      %dt Time
-                      %dd
-                        %time{ datatime: workerJournal.lastMessage.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.lastMessage.time)
-
-                - each solverStageJournalPair in [['annealing', workerJournal.annealingJournal], ['exhaustive', workerJournal.exhaustiveJournal]]
-                  - var solverStageName = solverStageJournalPair[0];
-                  - var solverStageDisplayName = solverStageName.slice(0, 1).toUpperCase() + solverStageName.slice(1);
-                  - var solverStageJournal = solverStageJournalPair[1];
-
-                  %section.solver-stage{ 'data-solver-stage-name': solverStageName }
-                    %h4= solverStageDisplayName
-
-                    - if(!solverStageJournal.isBlank())
-                      - var solverStageStatistics = solverStageJournal.scoringDistribution.calculateStatistics();
-
+                    %section.col-xs-6
+                      %h4 Last Message
                       %dl.dl-horizontal
-                        %dt Top Score
-                        %dd= solverStageJournal.scoringDistribution.max
-                        %dt Top Score At
+                        %dt Type
+                        %dd= workerJournal.lastMessage.type
+                        %dt Action
+                        %dd= workerJournal.lastMessage.action
+                        %dt Time
                         %dd
-                          %time{ datatime: solverStageJournal.topScoreTime.toISOString() }
-                            = strftime('%Y-%m-%d %H:%M:%S', solverStageJournal.topScoreTime)
-                            %span (after #{(solverStageJournal.topScoreTime - workerJournal.startTime) / 1000} seconds)
-                        %dt Count
-                        %dd= solverStageStatistics.total
-                        %dt Total Time (s)
-                        %dd= solverStageJournal.runTime / 1000
-                        %dt Average Time (s)
-                        %dd= solverStageJournal.runTime / (1000 * solverStageStatistics.total)
-                        %dt Min Score
-                        %dd= solverStageStatistics.min
-                        %dt Max Score
-                        %dd= solverStageStatistics.max
-                        %dt Average Score
-                        %dd= solverStageStatistics.average
+                          %time{ datatime: workerJournal.lastMessage.time.toISOString() }= strftime('%Y-%m-%d %H:%M:%S', workerJournal.lastMessage.time)
+                        %dt Elapsed (s)
+                        %dd= ((new Date()) - workerJournal.lastMessage.time) / 1000
 
-                      %div.score-distribution{ 'data-score-distribution': JSON.stringify(solverStageJournal.scoringDistribution.distribution) }
+                  - each solverStageJournalPair in [['annealing', workerJournal.annealingJournal], ['exhaustive', workerJournal.exhaustiveJournal]]
+                    - var solverStageName = solverStageJournalPair[0];
+                    - var solverStageDisplayName = solverStageName.slice(0, 1).toUpperCase() + solverStageName.slice(1);
+                    - var solverStageJournal = solverStageJournalPair[1];
+
+                    %section.solver-stage{ 'data-solver-stage-name': solverStageName }
+                      %h4= solverStageDisplayName
+
+                      - if(!solverStageJournal.isBlank())
+                        - var solverStageStatistics = solverStageJournal.scoringDistribution.calculateStatistics();
+
+                        %dl.dl-horizontal
+                          %dt Top Score
+                          %dd= solverStageJournal.scoringDistribution.max
+                          %dt Top Score At
+                          %dd
+                            %time{ datatime: solverStageJournal.topScoreTime.toISOString() }
+                              = strftime('%Y-%m-%d %H:%M:%S', solverStageJournal.topScoreTime)
+                              %span (after #{(solverStageJournal.topScoreTime - workerJournal.startTime) / 1000} seconds)
+                          %dt Count
+                          %dd= solverStageStatistics.total
+                          %dt Total Time (s)
+                          %dd= solverStageJournal.runTime / 1000
+                          %dt Average Time (s)
+                          %dd= solverStageJournal.runTime / (1000 * solverStageStatistics.total)
+                          %dt Min Score
+                          %dd= solverStageStatistics.min
+                          %dt Max Score
+                          %dd= solverStageStatistics.max
+                          %dt Average Score
+                          %dd= solverStageStatistics.average
+
+                        %div.score-distribution{ 'data-score-distribution': JSON.stringify(solverStageJournal.scoringDistribution.distribution) }
+        - else
+          %div Nothing yet monitored.

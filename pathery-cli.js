@@ -393,8 +393,6 @@ function executeMapByIdCommand(client, configuration, commandParameters) {
   function doGetMapAndSolve(wasNotDelayed) {
     client.getMap(mapId, { preventHTTPCaching: !wasNotDelayed }).done(
         function (map) {
-          console.log('Successfully retrieved map', map.id, 'at', new Date());
-
           solveMap(client, map, configuration);
         },
         function (error) {

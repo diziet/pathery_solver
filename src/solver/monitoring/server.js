@@ -1,5 +1,4 @@
 // TODO: Various derived statistics.
-// TODO: Summary for all workers.
 // TODO: Interval summaries (e.g. last full minute, 5 minutes, hour).
 // TODO: Something additional on exhaustive start...not sure what though.
 // TODO: Track statistics on improvement by exhaustive search.
@@ -27,20 +26,6 @@ var httpServer = null;
 var workerJournals = [];
 
 /**
- * The semantics on this are rather dubious as it is conceivable that in the future more than a single map may be
- * monitored by the same Solver.Monitoring.Server. Avoid using where possible.
- *
- * @returns {WorkerJournal}
- */
-function mapBeingMonitored() {
-  if(workerJournals.length > 0 && workerJournals[0].map) {
-    return workerJournals[0].map;
-  } else {
-    return null;
-  }
-}
-
-/**
  * Render the index.html.haml template, passing the final content to the provided onSuccessCallback.
  *
  * @param {Function} onSuccessCallback
@@ -61,15 +46,33 @@ module.exports.renderIndexHTML = function (onSuccessCallback, onErrorCallback) {
             success: function (indexCSSContent) {
               var indexHTMLContent;
               var hamlError;
+              var aggregatedWorkerJournal;
+              var combinedWorkerJournals;
+
+              if(workerJournals.length === 0) {
+                aggregatedWorkerJournal = null;
+                combinedWorkerJournals = [];
+              } else if(workerJournals.length === 1) {
+                aggregatedWorkerJournal = workerJournals[0];
+                combinedWorkerJournals = [aggregatedWorkerJournal];
+              } else {
+                aggregatedWorkerJournal = new WorkerJournal(null, workerJournals[0].map);
+
+                for(var i = 0; i < workerJournals.length; i++) {
+                  aggregatedWorkerJournal.merge(workerJournals[i]);
+                }
+
+                combinedWorkerJournals = [aggregatedWorkerJournal].concat(workerJournals);
+              }
 
               try {
                 indexHTMLContent = HamlJS.render(indexTemplateContent, {
                   locals: {
+                    aggregatedWorkerJournal: aggregatedWorkerJournal,
+                    combinedWorkerJournals: combinedWorkerJournals,
                     indexCSSContent: indexCSSContent,
                     indexJavaScriptContent: indexJavaScriptContent,
-                    mapBeingMonitored: mapBeingMonitored,
-                    strftime: strftime,
-                    workerJournals: workerJournals
+                    strftime: strftime
                   }
                 });
               } catch(e) {

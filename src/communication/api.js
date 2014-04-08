@@ -109,8 +109,6 @@ module.exports.Client.prototype.getMap = function (mapId, options) {
   var cachedMap = !noCache && this.getMapFromCache(mapId);
 
   if(cachedMap) {
-    console.info('Loaded Map', mapId, 'from the local cache.');
-
     return Q(cachedMap);
   } else {
     var requestPath = '/a/map/' + mapId + '.js';
@@ -123,6 +121,8 @@ module.exports.Client.prototype.getMap = function (mapId, options) {
 
     return this.getJSON(requestPath).then(function (rawMapObject) {
       var map = new Map(rawMapObject, { hostname: self.hostname, port: self.port, protocol: PROTOCOL });
+
+      console.log('Successfully retrieved map', map.id, 'at', new Date());
 
       if(!noCache) {
         self.addMapToCache(map);
