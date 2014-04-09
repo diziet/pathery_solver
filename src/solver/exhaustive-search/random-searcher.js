@@ -11,7 +11,7 @@ var exhaustiveSearchDepth = ExploratoryUtilities.configuration.exhaustiveSearchD
  * @param {Object} currBlocks
  * @returns {{score: Number, solution: Number[][] }}
  */
-module.exports.search = function(currBlocks, graph) {
+module.exports.search = function(graph, currBlocks) {
   for(var i = 0; i < exhaustiveSearchDepth; i++) {
     Analyst.removeRandomBlock(graph, currBlocks);
   }
