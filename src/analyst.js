@@ -221,6 +221,61 @@ PatheryGraph.prototype.teleport = function(block, used_teleports) {
   return null;
 }
 
+/**
+ *
+ * @param {Object} blocksDict
+ * @returns {String}
+ */
+PatheryGraph.prototype.toString = function (blocksDict) {
+  var i, j;
+  var ret = '';
+
+  // Draw the top row.
+  ret += '┌─';
+  for(j = 1; j < this.m; j++) {
+    ret += '┬─'
+  }
+  ret += '┐\n';
+
+  for(i = 0; i < this.serial_board.length; i++) {
+    // Draw the beginning of the row.
+    if(i % this.m === 0)  {
+      ret += '│';
+    }
+
+    // Draw the current vertex.
+    if(blocksDict && blocksDict[i]) {
+      ret += 'w';
+    } else {
+      ret += this.serial_board[i];
+    }
+    ret += '│';
+
+    // Draw the end of the row.
+    if((i + 1) % this.m === 0) {
+      ret += '\n';
+
+      // Draw a middle row.
+      if((i + 1) / this.m !== this.n) {
+        ret += '├─';
+        for(j = 1; j < this.m; j++) {
+          ret += '┼─'
+        }
+        ret += '┤\n';
+      }
+    }
+  }
+
+  // Draw the bottom row.
+  ret += '└─';
+  for(j = 1; j < this.m; j++) {
+    ret += '┴─'
+  }
+  ret += '┘\n';
+
+  return ret;
+};
+
 // var BFS_queue = new Int32Array(graph.m * graph.n); // new Array(...)
 var BFS_queue = new Int32Array(1000); // new Array(...)
 var find_path_ret_val = new Int32Array(2500); // Can probably make this smaller (3/4 * 2500)
