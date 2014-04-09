@@ -634,6 +634,34 @@ function removeRandomBlock(graph, currBlocks) {
 }
 exports.removeRandomBlock = removeRandomBlock;
 
+
+// Places a block totally at random. This can be needed by any of the placeBlock versions when putting a block anywhere
+// along the current path would cause a dead-end. See [Map 4500](http://www.pathery.com/scores#2014-03-23_4500_1_) for
+// an example.
+function randomlyPlaceBlock(graph, currBlocks) {
+  var maxRandomBlock = graph.m * graph.n - 1;
+
+  while(true) {
+    var newBlockKey = Math.floor(maxRandomBlock * ExploratoryUtilities.random());
+
+    if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
+      currBlocks[newBlockKey] = true;
+
+      var updatedPath = find_pathery_path(graph, currBlocks);
+
+      if(updatedPath === null || !updatedPath.value) {
+        delete currBlocks[newBlockKey];
+      } else {
+        return {
+          blockKey: newBlockKey,
+          score: updatedPath.value,
+          solution: currBlocks
+        }
+      }
+    }
+  }
+}
+
 var placeBlock;
 switch(ExploratoryUtilities.configuration.placeBlockVersion) {
   case 'Oliver':
@@ -667,6 +695,8 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
           }
         }
       }
+
+      return randomlyPlaceBlock(graph, currBlocks);
     };
 
     break;
@@ -704,28 +734,7 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
         }
       }
 
-      // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
-      // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
-      var maxRandomBlock = graph.m * graph.n - 1;
-      while(true) {
-        newBlockKey = Math.floor(maxRandomBlock * ExploratoryUtilities.random());
-
-        if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
-          currBlocks[newBlockKey] = true;
-
-          updatedPath = find_pathery_path(graph, currBlocks);
-
-          if(updatedPath === null || !updatedPath.value) {
-            delete currBlocks[newBlockKey];
-          } else {
-            return {
-              blockKey: newBlockKey,
-              score: updatedPath.value,
-              solution: currBlocks
-            }
-          }
-        }
-      }
+      return randomlyPlaceBlock(graph, currBlocks);
     };
 
     break;
@@ -763,28 +772,7 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
         }
       }
 
-      // If everything along the relevant path results in a dead-end, then just randomly choose from all blocks until we find one.
-      // OPTIMIZE: This allows (pointless) random selection of start and end blocks.
-      var maxRandomBlock = graph.m * graph.n - 1;
-      while(true) {
-        newBlockKey = Math.floor(maxRandomBlock * ExploratoryUtilities.random());
-
-        if (graph.serial_board[newBlockKey] === ' ' && !currBlocks[newBlockKey]) {
-          currBlocks[newBlockKey] = true;
-
-          updatedPath = find_pathery_path(graph, currBlocks);
-
-          if(updatedPath === null || !updatedPath.value) {
-            delete currBlocks[newBlockKey];
-          } else {
-            return {
-              blockKey: newBlockKey,
-              score: updatedPath.value,
-              solution: currBlocks
-            }
-          }
-        }
-      }
+      return randomlyPlaceBlock(graph, currBlocks);
     };
 
     break;
