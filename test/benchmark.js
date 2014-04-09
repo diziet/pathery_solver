@@ -1,7 +1,15 @@
-//
-// TODO: Document usage.
-// TODO: Support parsing parameters from environment variables.
-//
+/******************************************************************************
+  Example usage:
+
+      MAP_ID=4572 \
+        OPTIMAL_SCORE=61 \
+        BENCHMARK_ITERATION_COUNT=6 \
+        BENCHMARK_ITERATION_TIMEOUT=60000 \
+        BENCHMARK_ATTRIBUTE_NAME=placeBlockVersion \
+        BENCHMARK_ATTRIBUTE_DOMAIN='["Oliver", "Michael01", "Michael02"]' \
+        node test/benchmark.js
+
+ ******************************************************************************/
 
 var _ = require('underscore');
 
@@ -34,53 +42,53 @@ const SEEDS = [
 /**
  * @variable {Number}
  */
-var mapId = 4521;
+var mapId = parseInt(process.env.MAP_ID);
+if(!mapId) throw new Error('Missing required environment variable MAP_ID.');
 
 /**
  * @variable {Number}
  */
-var optimalScore = 47;
+var optimalScore = parseInt(process.env.OPTIMAL_SCORE);
+if(!optimalScore) throw new Error('Missing required environment variable OPTIMAL_SCORE.');
 
 /**
  * The number of benchmark iterations to run. Must be greater than zero and less than or equal to the number of SEEDS.
  *
  * @variable {Number}
  */
-var benchmarkIterationCount = 6;
+var benchmarkIterationCount = parseInt(process.env.BENCHMARK_ITERATION_COUNT) || SEEDS.length;
+if(benchmarkIterationCount <= 0) throw new Error('BENCHMARK_ITERATION_COUNT must be greater than zero.');
+if(benchmarkIterationCount > SEEDS.length) throw new Error('BENCHMARK_ITERATION_COUNT must be less than or equal to the number of seeds (' + SEEDS.length + ').');
+
+/**
+ * Maximum time to allow an iteration to run (in milliseconds).
+ *
+ * @variable {Number}
+ */
+var benchmarkIterationTimeout = parseInt(process.env.BENCHMARK_ITERATION_TIMEOUT) || (2 * 60 * 1000);
 
 /**
  * The name of the attribute (from the keys of ExploratoryUtilities.CONFIGURATION_DEFAULTS) to benchmark across.
  *
  * @variable {String}
  */
-var configurationAttributeToBenchmarkName = 'placeBlockVersion';
+var configurationAttributeToBenchmarkName = process.env.BENCHMARK_ATTRIBUTE_NAME;
+if(!configurationAttributeToBenchmarkName) throw new Error('Missing required environment variable BENCHMARK_ATTRIBUTE_NAME.');
+if(!ExploratoryUtilities.CONFIGURATION_DEFAULTS.hasOwnProperty(configurationAttributeToBenchmarkName)) throw new Error('Unknown BENCHMARK_ATTRIBUTE_NAME.');
+
 /**
  * The values of the attribute to benchmark across.
  *
  * @variable {Array}
  */
-var configurationAttributeToBenchmarkDomain = ['Oliver', 'Michael01', 'Michael02'];
+var configurationAttributeToBenchmarkDomain = JSON.parse(process.env.BENCHMARK_ATTRIBUTE_DOMAIN);
+if(!(configurationAttributeToBenchmarkDomain instanceof Array)) throw new Error('BENCHMARK_ATTRIBUTE_DOMAIN must be an array.');
+if(configurationAttributeToBenchmarkDomain.length === 0) throw new Error('BENCHMARK_ATTRIBUTE_DOMAIN may not be empty.');
 
 ////////////////////////////////////////////////////////////////////////////////
-// Setup and sanity checks.
+// Setup.
 
 ExploratoryUtilities.useRepeatableRandomNumbers(1);
-
-if(benchmarkIterationCount <= 0) {
-  throw new Error('benchmarkIterationCount must be greater than zero');
-}
-
-if(benchmarkIterationCount > SEEDS.length) {
-  throw new Error('benchmarkIterationCount must be less than or equal to the number of seeds');
-}
-
-if(!ExploratoryUtilities.CONFIGURATION_DEFAULTS.hasOwnProperty(configurationAttributeToBenchmarkName)) {
-  throw new Error('Unknown configurationAttributeToBenchmarkName');
-}
-
-if(configurationAttributeToBenchmarkDomain.length === 0) {
-  throw new Error('configurationAttributeToBenchmarkDomain may not be empty');
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main logic.
@@ -142,6 +150,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
         var startTime = Date.now();
         var worker;
         var workerEnv = _.extend({}, process.env);
+        var workerTimeout;
 
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + 'repeatableRandomNumbers'] = benchmarkIterationParameter.seed;
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + configurationAttributeToBenchmarkName] = jsonifiedVersionToBenchmark;
@@ -156,23 +165,27 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
           }
         });
 
+        workerTimeout = setTimeout(function () { worker.kill(); }, benchmarkIterationTimeout);
+
         worker.on('exit', function () {
+          clearTimeout(workerTimeout);
+
           if(foundOptimal) {
             recordBenchmarkResult(jsonifiedVersionToBenchmark, Date.now() - startTime);
+          } else {
+            console.warn('Worker for', jsonifiedVersionToBenchmark, 'terminated before reaching the optimal solution.');
+          }
 
-            if(remainingBenchmarkIterationParameters.length === 0) {
-              remainingJsonifiedVersionsToBenchmark.shift();
+          if(remainingBenchmarkIterationParameters.length === 0) {
+            remainingJsonifiedVersionsToBenchmark.shift();
 
-              if(remainingJsonifiedVersionsToBenchmark.length === 0) {
-                onBenchmarkingComplete();
-              } else {
-                doBenchmark(remainingJsonifiedVersionsToBenchmark, initialBenchmarkIterationParameters.slice(0));
-              }
+            if(remainingJsonifiedVersionsToBenchmark.length === 0) {
+              onBenchmarkingComplete();
             } else {
-              doBenchmark(remainingJsonifiedVersionsToBenchmark, remainingBenchmarkIterationParameters);
+              doBenchmark(remainingJsonifiedVersionsToBenchmark, initialBenchmarkIterationParameters.slice(0));
             }
           } else {
-            console.error("Worker terminated before reaching the optimal solution");
+            doBenchmark(remainingJsonifiedVersionsToBenchmark, remainingBenchmarkIterationParameters);
           }
         });
       }
@@ -183,13 +196,10 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
             var benchmarkRuntimeListForVersion = benchmarkResults[jsonifiedVersionToBenchmark];
             var versionToBenchmark = JSON.parse(jsonifiedVersionToBenchmark);
 
-            if(benchmarkRuntimeListForVersion.length !== benchmarkIterationCount) {
-              throw new Error('invariant');
-            }
-
             console.log('********************************************************************************');
             console.log('version', versionToBenchmark);
             console.log('runtimes (milliseconds)', benchmarkRuntimeListForVersion);
+            console.log('unsolved count', benchmarkIterationCount - benchmarkRuntimeListForVersion.length);
             console.log(
                 'average runtime (seconds)',
                 benchmarkRuntimeListForVersion.reduce(
@@ -197,7 +207,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
                       return memo + runTime;
                     },
                     0
-                ) / (benchmarkIterationCount * 1000)
+                ) / (benchmarkRuntimeListForVersion.length * 1000)
             );
           }
         }
