@@ -152,6 +152,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
         var workerEnv = _.extend({}, process.env);
         var workerTimeout;
 
+        workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + 'exhaustiveSearchDelayIterations'] = 5000;
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + 'repeatableRandomNumbers'] = benchmarkIterationParameter.seed;
         workerEnv[ExploratoryUtilities.CONFIGURATION_ENV_VARIABLE_PREFIX + configurationAttributeToBenchmarkName] = jsonifiedVersionToBenchmark;
 

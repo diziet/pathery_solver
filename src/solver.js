@@ -31,6 +31,8 @@ module.exports.solve = function (map, initialSolution, options, onNewTopScoreCal
     if(ExploratoryUtilities.configuration.exhaustiveSearchDepth > 0) {
       var ExhaustiveSearch = require('./solver/exhaustive-search.js');
 
+      ExhaustiveSearch.initialize();
+
       return ExhaustiveSearch.searchWrapper;
     } else {
       return function (_graph, currBlocks, currAnnealingScore) {

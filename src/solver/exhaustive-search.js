@@ -25,14 +25,49 @@ const NON_TOP_EXHAUSTIVE_SEARCH_BASE = 3;
 const NON_TOP_EXHAUSTIVE_SEARCH_ADDEND = 1;
 
 /**
- * Exhaustive searches will not be performed until this hits 0.
+ * This should be set to false via @see updateDelayExhaustiveSearch once exhaustive searches should go forward.
  *
- * Using iterations rather than time to allow for repeatability in e.g. test/benchmark.js.
+ * @variable {boolean}
+ */
+var delayExhaustiveSearch;
+
+/**
+ * Called when @see delayExhaustiveSearch is true, possible setting it to false;
+ *
+ * @function
+ *
+ * @return {Boolean}
+ */
+var updateDelayExhaustiveSearch;
+
+if(ExploratoryUtilities.configuration.exhaustiveSearchDelayIterations === null) {
+  const DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS = 2000;
+
+  delayExhaustiveSearch = true;
+
+  updateDelayExhaustiveSearch = function () {
+    return (Date.now() - solverStartedAt) < DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS;
+  }
+} else {
+  var delayExhaustiveSearchIteration = ExploratoryUtilities.configuration.exhaustiveSearchDelayIterations;
+
+  if(delayExhaustiveSearchIteration === 0) {
+    delayExhaustiveSearch = false;
+  } else {
+    delayExhaustiveSearch = true;
+
+    updateDelayExhaustiveSearch = function () {
+      return --delayExhaustiveSearchIteration > 0;
+    }
+  }
+}
+
+/**
+ * The time (in milliseconds) that we started the solver.
  *
  * @variable {Number}
  */
-var delayExhaustiveSearchIterations = ExploratoryUtilities.configuration.exhaustiveSearchDelayIterations;
-if((typeof delayExhaustiveSearchIterations !== 'number') || delayExhaustiveSearchIterations < 0) { throw new Error(); }
+var solverStartedAt = Date.now();
 
 /**
  * The top score we have seen solely looking at the annealing process. This _does not_ include scores generated via
@@ -66,6 +101,10 @@ var specializedSearchFunction = (function () {
   }
 })();
 
+module.exports.initialize = function () {
+  solverStartedAt = Date.now();
+};
+
 /**
  *
  * @param {Analyst.PatheryGraph} graph
@@ -76,8 +115,8 @@ var specializedSearchFunction = (function () {
 module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) {
   var doExhaustiveSearch;
 
-  if(delayExhaustiveSearchIterations !== 0) {
-    delayExhaustiveSearchIterations--;
+  if(delayExhaustiveSearch) {
+    delayExhaustiveSearch = updateDelayExhaustiveSearch();
 
     doExhaustiveSearch = false;
   } else {

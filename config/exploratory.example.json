@@ -1,6 +1,6 @@
 {
   "assertFindPathShortcutCorrect": false,
-  "exhaustiveSearchDelayIterations": 5000,
+  "exhaustiveSearchDelayIterations": null,
   "exhaustiveSearchDepth": 2,
   "exhaustiveSearchDomain": "combinatorial",
   "monitorPort": 8018,
