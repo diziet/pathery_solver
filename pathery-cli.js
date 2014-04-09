@@ -462,7 +462,7 @@ function solveMap(client, map, configuration) {
     var initialBlocks = {};
 
     for(var j = 0; j < map.walls; j++) {
-      Analyst.placeBlock(map.graph(), initialBlocks);
+      Analyst.randomlyPlaceBlock(map.graph(), initialBlocks);
     }
 
     MultiprocessingCoordinator.startWorker(map, map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);

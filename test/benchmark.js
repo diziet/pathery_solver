@@ -6,7 +6,7 @@
         BENCHMARK_ITERATION_COUNT=6 \
         BENCHMARK_ITERATION_TIMEOUT=60000 \
         BENCHMARK_ATTRIBUTE_NAME=placeBlockVersion \
-        BENCHMARK_ATTRIBUTE_DOMAIN='["Oliver", "Michael01", "Michael02"]' \
+        BENCHMARK_ATTRIBUTE_DOMAIN='["Oliver01", "Oliver02", "Michael01", "Michael02"]' \
         node test/benchmark.js
 
  ******************************************************************************/
@@ -111,7 +111,7 @@ var initialJsonifiedVersionsToBenchmark = configurationAttributeToBenchmarkDomai
         var initialBlocks = {};
 
         for(var j = 0; j < map.walls; j++) {
-          Analyst.placeBlock(map.graph(), initialBlocks);
+          Analyst.randomlyPlaceBlock(map.graph(), initialBlocks);
         }
 
         return {

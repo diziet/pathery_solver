@@ -716,10 +716,11 @@ function randomlyPlaceBlock(graph, currBlocks) {
     }
   }
 }
+exports.randomlyPlaceBlock = randomlyPlaceBlock;
 
 var placeBlock;
 switch(ExploratoryUtilities.configuration.placeBlockVersion) {
-  case 'Oliver':
+  case 'Oliver01':
     placeBlock = function (graph, currBlocks) {
       var i = 0;
       while (i < 1000) {
@@ -740,6 +741,35 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
           var updatedPath = find_pathery_path(graph, currBlocks);
 
           if(!updatedPath || !updatedPath.paths || !updatedPath.paths[0]) {
+            delete currBlocks[newBlockKey];
+          } else {
+            return {
+              blockKey: newBlockKey,
+              score: updatedPath.value,
+              solution: currBlocks
+            }
+          }
+        }
+      }
+
+      return randomlyPlaceBlock(graph, currBlocks);
+    };
+
+    break;
+  case 'Oliver02':
+    placeBlock = function (graph, currBlocks) {
+      var pathSansBlock = find_pathery_path(graph, currBlocks);
+      var relevantBlocks = pathSansBlock.paths[0];
+
+      for(var i = 0; i < 1000; i++) {
+        var newBlockKey = relevantBlocks[Math.floor((relevantBlocks.length - 2) * ExploratoryUtilities.random()) + 1];
+
+        if (graph.serial_board[newBlockKey] === ' ') {
+          currBlocks[newBlockKey] = true;
+
+          var updatedPath = find_pathery_path(graph, currBlocks);
+
+          if(!updatedPath.paths[0]) {
             delete currBlocks[newBlockKey];
           } else {
             return {

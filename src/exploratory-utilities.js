@@ -17,7 +17,7 @@ module.exports.CONFIGURATION_DEFAULTS = {
   exhaustiveSearchDepth: 2,
   exhaustiveSearchDomain: 'combinatorial',
   monitorPort: 8018,
-  placeBlockVersion: 'Oliver',
+  placeBlockVersion: 'Oliver02',
   repeatableRandomNumbers: false
 };
 
