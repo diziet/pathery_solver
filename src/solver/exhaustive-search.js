@@ -11,15 +11,6 @@ var ExploratoryUtilities = require('./../exploratory-utilities.js');
 var MonitoringClient = require('./monitoring/client.js');
 
 /**
- * The number of milliseconds to wait after the worker starts before attempting exhaustive searches.
- *
- * @see delayExhaustiveSearch
- *
- * @constant {Number} - Wait this number of milliseconds
- */
-const DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS = 2000;
-
-/**
  * @see NON_TOP_EXHAUSTIVE_SEARCH_ADDEND
  *
  * @constant {Number}
@@ -34,19 +25,14 @@ const NON_TOP_EXHAUSTIVE_SEARCH_BASE = 3;
 const NON_TOP_EXHAUSTIVE_SEARCH_ADDEND = 1;
 
 /**
- * This will be set to false once @see DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS have passed, thus causing exhaustive
- * searches to go forward.
+ * Exhaustive searches will not be performed until this hits 0.
  *
- * @variable {boolean}
- */
-var delayExhaustiveSearch = true;
-
-/**
- * The time (in milliseconds) that we started the solver.
+ * Using iterations rather than time to allow for repeatability in e.g. test/benchmark.js.
  *
  * @variable {Number}
  */
-var solverStartedAt = Date.now();
+var delayExhaustiveSearchIterations = ExploratoryUtilities.configuration.exhaustiveSearchDelayIterations;
+if((typeof delayExhaustiveSearchIterations !== 'number') || delayExhaustiveSearchIterations < 0) { throw new Error(); }
 
 /**
  * The top score we have seen solely looking at the annealing process. This _does not_ include scores generated via
@@ -80,10 +66,6 @@ var specializedSearchFunction = (function () {
   }
 })();
 
-module.exports.initialize = function () {
-  solverStartedAt = Date.now();
-};
-
 /**
  *
  * @param {Analyst.PatheryGraph} graph
@@ -94,8 +76,8 @@ module.exports.initialize = function () {
 module.exports.searchWrapper = function (graph, currBlocks, currAnnealingScore) {
   var doExhaustiveSearch;
 
-  if(delayExhaustiveSearch) {
-    delayExhaustiveSearch = (Date.now() - solverStartedAt) < DELAY_EXHAUSTIVE_SEARCH_FOR_MILLISECONDS;
+  if(delayExhaustiveSearchIterations !== 0) {
+    delayExhaustiveSearchIterations--;
 
     doExhaustiveSearch = false;
   } else {

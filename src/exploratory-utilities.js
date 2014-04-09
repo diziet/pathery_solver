@@ -13,6 +13,7 @@ var _ = require('underscore');
 
 module.exports.CONFIGURATION_DEFAULTS = {
   assertFindPathShortcutCorrect: false,
+  exhaustiveSearchDelayIterations: 5000,
   exhaustiveSearchDepth: 2,
   exhaustiveSearchDomain: 'combinatorial',
   monitorPort: 8018,
