@@ -360,17 +360,19 @@ PatheryGraph.prototype.find_path = function(
 // ie.  [1,55,330] which represents the previous solution for path caching
 
 function find_full_path(graph, blocks, reversed, previous_solution, last_block_placed, relevant_blocks){
-  //console.log("FIND FULL PATH")
-  block_in_question = 210000
-  //previous_solution = []
-  if (previous_solution == null || previous_solution == undefined) {
-    previous_solution = []
-  }
   var used_teleports = {};
   var index = 0;
   var fullpath = [];
   var cur; // current list of start points
   var extra_block;
+
+  // XXX: If there are teleports, disable the previous solution based shortcuts.
+  // TODO: Making shortcuts work with teleports would likely be worth a 10% - 20% performance increase. Would require
+  //     tracking the individual paths found by find_path, rather than the entire final path.
+  if(graph.has_teleports) {
+    previous_solution = false;
+  }
+
   if (reversed) {     // red path
     cur = graph.red_starts;
     extra_block = GREEN_THROUGH_ONLY;
@@ -404,7 +406,7 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     // never hits the block just placed, then don't recalculate the BFS 
     // and just use the previous version
 
-    if (!graph.has_teleports){
+    if (previous_solution){
       var ii;
       var shortcut = false;
 
@@ -486,7 +488,9 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     if (out_blocks == null) {
       index += 1;
       cur = [block];
-      previous_solution = previous_solution.slice(previous_solution.indexOf(block), previous_solution.length)
+      if(previous_solution) {
+        previous_solution = previous_solution.slice(previous_solution.indexOf(block))
+      }
     }
   }
 
