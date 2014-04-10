@@ -1027,21 +1027,22 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
       console.warn('ExploratoryUtilities.configuration.assertFindPathShortcutCorrect was set; performing shortcut checking');
     }
 
-    var pathUsingShortcuts = solution.paths[0];
-    if(pathUsingShortcuts) {
-      var solutionSansShortcuts = find_pathery_path(graph, current_blocks);
-      var pathSansShortcuts = solutionSansShortcuts.paths[0];
+    var solutionSansShortcuts = find_pathery_path(graph, current_blocks);
+    solution.paths.forEach(function (pathUsingShortcuts, idx) {
+      if(pathUsingShortcuts) {
+        var pathSansShortcuts = solutionSansShortcuts.paths[idx];
 
-      if(pathUsingShortcuts.length === pathSansShortcuts.length) {
-        for(i = 0; i < pathUsingShortcuts.length; i++) {
-          if(pathUsingShortcuts[i] !== pathSansShortcuts[i]) {
-            throw new Error('invariant');
+        if(pathUsingShortcuts.length === pathSansShortcuts.length) {
+          for(i = 0; i < pathUsingShortcuts.length; i++) {
+            if(pathUsingShortcuts[i] !== pathSansShortcuts[i]) {
+              throw new Error('invariant');
+            }
           }
+        } else {
+          throw new Error('invariant');
         }
-      } else {
-        throw new Error('invariant');
       }
-    }
+    });
   }
 
   var possible_next_moves;
