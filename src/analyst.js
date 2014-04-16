@@ -1099,9 +1099,13 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
           var temp_y = y + dir[1]
           var neighbor_square = graph.serial_board[graph.keyify_coordinates(temp_x, temp_y)]
           // not empty, checkpoint a/b/c, finish or start
-          if ([' ','a','b', 'f', 's','c', 'p', 'S', 'd', 'e', 't'].indexOf(neighbor_square) == -1){
-            connected_to_something = true
-            has_blocks_dirs.push(graph.determine_ordinal(dir))
+          if ([' ','a','b', 'f', 's','c', 'p', 'S', 'd', 'e', 't'].indexOf(neighbor_square) === -1) {
+            connected_to_something = true;
+
+            // REVIEW: Added teleport-out blocks. Not quite sure I understand what's going on here at all.
+            if(['t', 'u', 'm', 'n', 'g', 'h', 'i', 'j', 'k', 'l'].indexOf(neighbor_square) === -1) {
+              has_blocks_dirs.push(graph.determine_ordinal(dir));
+            }
           }
 
           // check for direction
