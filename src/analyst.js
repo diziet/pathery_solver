@@ -994,6 +994,33 @@ exports.place_greedy2 = place_greedy2;
 // SOLVER
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+const CONNECTED_IGNORE_LOOKUP = {
+  ' ': true,
+  a: true,
+  b: true,
+  c: true,
+  d: true,
+  e: true,
+  f: true,
+  p: true,
+  S: true,
+  s: true,
+  t: true
+};
+
+const HAS_BLOCKS_IGNORE_LOOKUP = {
+  g: true,
+  h: true,
+  i: true,
+  j: true,
+  k: true,
+  l: true,
+  m: true,
+  n: true,
+  t: true,
+  u: true
+};
+
 var assertFindPathShortcutCorrectWarningSent;
 
 function place_greedy(board, cur_blocks, depth, total, previous_solution, previous_block, blocked_list, graph, already_tried_combination, cb) {
@@ -1099,11 +1126,11 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
           var temp_y = y + dir[1]
           var neighbor_square = graph.serial_board[graph.keyify_coordinates(temp_x, temp_y)]
           // not empty, checkpoint a/b/c, finish or start
-          if ([' ','a','b', 'f', 's','c', 'p', 'S', 'd', 'e', 't'].indexOf(neighbor_square) === -1) {
+          if (!CONNECTED_IGNORE_LOOKUP[neighbor_square]) {
             connected_to_something = true;
 
             // REVIEW: Added teleport-out blocks. Not quite sure I understand what's going on here at all.
-            if(['t', 'u', 'm', 'n', 'g', 'h', 'i', 'j', 'k', 'l'].indexOf(neighbor_square) === -1) {
+            if(!HAS_BLOCKS_IGNORE_LOOKUP[neighbor_square]) {
               has_blocks_dirs.push(graph.determine_ordinal(dir));
             }
           }
