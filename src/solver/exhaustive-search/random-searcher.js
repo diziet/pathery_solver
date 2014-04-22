@@ -13,7 +13,7 @@ var exhaustiveSearchDepth = ExploratoryUtilities.configuration.exhaustiveSearchD
  */
 module.exports.search = function(graph, currBlocks) {
   for(var i = 0; i < exhaustiveSearchDepth; i++) {
-    Analyst.removeRandomBlock(graph, currBlocks);
+    Analyst.removeBlock(graph, currBlocks);
   }
 
   var solution = Analyst.place_greedy(null, graph.listify_blocks(currBlocks), exhaustiveSearchDepth, undefined, undefined, undefined, undefined, graph);

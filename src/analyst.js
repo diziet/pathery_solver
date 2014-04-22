@@ -664,7 +664,9 @@ function randomWeightedChoice(table) {
   throw new Error('invariant');
 }
 
-function removeRandomBlock(graph, currBlocks) {
+function removeBlock(graph, currBlocks, weightFunction) {
+  weightFunction = weightFunction || defaultWeightFunction;
+
   var table = [];
   for (var blockKey in currBlocks) {
     delete currBlocks[blockKey];
@@ -674,7 +676,7 @@ function removeRandomBlock(graph, currBlocks) {
 
     // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
     if(blockScore) {
-      table.push({ id: blockKey, weight: Math.round(Math.pow(blockScore / 10, 4)) });
+      table.push({ id: blockKey, weight: weightFunction(blockScore) });
     }
 
     currBlocks[blockKey] = true;
@@ -690,8 +692,20 @@ function removeRandomBlock(graph, currBlocks) {
   delete currBlocks[blockKeyToRemove];
 
   return blockKeyToRemove;
+
+  ////////////////////
+  // Helper functions.
+
+  /**
+   *
+   * @param {Number} blockScore
+   * @returns {Number}
+   */
+  function defaultWeightFunction(blockScore) {
+    return Math.round(Math.pow(blockScore / 10, 4));
+  }
 }
-exports.removeRandomBlock = removeRandomBlock;
+exports.removeBlock = removeBlock;
 
 
 // Places a block totally at random. This can be needed by any of the placeBlock versions when putting a block anywhere
@@ -872,7 +886,7 @@ exports.placeBlock = placeBlock;
 
 function annealingIteration(graph, currBlocks) {
   // TODO: Maybe remove/place n blocks with a probability of `1/(b ^ (n - 1))`?
-  removeRandomBlock(graph, currBlocks);
+  removeBlock(graph, currBlocks);
   return placeBlock(graph, currBlocks);
 }
 exports.annealingIteration = annealingIteration;
@@ -923,12 +937,12 @@ function place_greedy2(board, currBlocks, depth, total, previous_solution, previ
     var prevScore = score
     if(topScore === null || score > topScore * 0.8) {
       // console.log("BRUTE FORCING")
-        block1 = removeRandomBlock(graph, currBlocks)
-         block2 = removeRandomBlock(graph, currBlocks)
-        //block3 = removeRandomBlock(graph, currBlocks)
-        //block4 = removeRandomBlock(graph, currBlocks)
-        //block3 = removeRandomBlock(graph, currBlocks)
-        //block4 = removeRandomBlock(graph, currBlocks)
+        block1 = removeBlock(graph, currBlocks)
+         block2 = removeBlock(graph, currBlocks)
+        //block3 = removeBlock(graph, currBlocks)
+        //block4 = removeBlock(graph, currBlocks)
+        //block3 = removeBlock(graph, currBlocks)
+        //block4 = removeBlock(graph, currBlocks)
          // console.log("currBlocks")
          // console.log(currBlocks)
 
@@ -938,20 +952,20 @@ function place_greedy2(board, currBlocks, depth, total, previous_solution, previ
 
         score = solution[1];
 
-      // block1 = removeRandomBlock(graph, currBlocks)
-      // block2 = removeRandomBlock(graph, currBlocks)
+      // block1 = removeBlock(graph, currBlocks)
+      // block2 = removeBlock(graph, currBlocks)
 
       // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
       // currBlocks = graph.dictify_blocks(solution[0])
-      // block1 = removeRandomBlock(graph, currBlocks)
-      // block2 = removeRandomBlock(graph, currBlocks)
+      // block1 = removeBlock(graph, currBlocks)
+      // block2 = removeBlock(graph, currBlocks)
 
       // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
 
       // currBlocks = graph.dictify_blocks(solution[0])
 
-      //       block1 = removeRandomBlock(graph, currBlocks)
-      // block2 = removeRandomBlock(graph, currBlocks)
+      //       block1 = removeBlock(graph, currBlocks)
+      // block2 = removeBlock(graph, currBlocks)
 
       // solution = place_greedy(board,graph.listify_blocks(currBlocks),2)
 

@@ -101,8 +101,16 @@ var specializedSearchFunction = (function () {
   }
 })();
 
-module.exports.initialize = function () {
+/**
+ *
+ * @param {Number} [initialTopAnnealingScore]
+ */
+module.exports.initialize = function (initialTopAnnealingScore) {
   solverStartedAt = Date.now();
+
+  if(initialTopAnnealingScore !== undefined) {
+    topAnnealingScore = initialTopAnnealingScore;
+  }
 };
 
 /**
