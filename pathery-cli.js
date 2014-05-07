@@ -227,6 +227,8 @@ switch(command) {
         dateMilliseconds = Date.now();
       }
       else if(rawDate === 'TOMORROW') {
+        const OFFSET_FOR_TOMORROW = 3 * 60 * 60 * 1000;
+
         var startAt;
 
         dateMilliseconds = Date.now() + 24 * 60 * 60 * 1000;
@@ -252,7 +254,7 @@ switch(command) {
           console.log('Overriding --start-at parameter since DATE = TOMORROW');
         }
 
-        configuration.startAt = startAt;
+        configuration.startAt = new Date(startAt - OFFSET_FOR_TOMORROW);
       } else {
         dateMilliseconds = Date.parse(rawDate);
       }
