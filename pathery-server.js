@@ -1,11 +1,16 @@
 /////////////////////////////////////////////////////
 // SERVER ONLY
 /////////////////////////////////////////////////////
-DEPTH_CONSTANT = 3
 var express = require('express');
 var Analyst = require('./src/analyst.js');
 
 var app = express();
+
+const MAX_DEPTH = parseInt(process.env.MAX_DEPTH) || 3;
+const USE_ORIGINAL_PLACE_GREEDY = !!process.env.USE_ORIGINAL_PLACE_GREEDY;
+
+console.log('MAX_DEPTH:', MAX_DEPTH);
+console.log('USE_ORIGINAL_PLACE_GREEDY:', USE_ORIGINAL_PLACE_GREEDY);
 
 // configure Express
 app.configure(function() {
@@ -24,15 +29,14 @@ var middleware = [
 app.post('/place_greedy', middleware, function(req, res){
   console.log("\nPLACE GREEDY:")
   var t = new Date().getTime();
-  remaining = JSON.parse(req.param('remaining'));
-  wallTotal = JSON.parse(req.param('total'));
-  if (remaining > DEPTH_CONSTANT  ) {
-    remaining = DEPTH_CONSTANT
+  var remaining = JSON.parse(req.param('remaining'));
+  if (remaining > MAX_DEPTH  ) {
+    remaining = MAX_DEPTH;
   }
-  console.log("REMAINING: " + remaining)
+  console.log("REMAINING:", remaining);
 
-  board = JSON.parse(req.param('board'))
-  graph = new Analyst.PatheryGraph(board)
+  var board = JSON.parse(req.param('board'))
+  var graph = new Analyst.PatheryGraph(board)
   
   solution = JSON.parse(req.param('solution'))
   keyed_solution = []
@@ -41,21 +45,26 @@ app.post('/place_greedy', middleware, function(req, res){
     keyed_solution.push(graph.keyify(solution[i]))
   }
 
-  console.log("KEYED SOLUTION")
-  console.log(keyed_solution)
-  console.log("WALLS TOTAL")
-  console.log(wallTotal)
-  var result = Analyst.place_greedy2(board, solution, remaining, wallTotal);
+  console.log("KEYED SOLUTION:", JSON.stringify(keyed_solution));
+
+  var result;
+
+  if(USE_ORIGINAL_PLACE_GREEDY) {
+    result = Analyst.place_greedy(board, solution, remaining);
+  } else {
+    var wallTotal = JSON.parse(req.param('total'));
+
+    result = Analyst.place_greedy2(board, solution, remaining, wallTotal);
+  }
+
   console.log("ms elapsed: " , new Date().getTime() - t)
   console.log("FINAL RESULT:" + result[0])
   console.log("FINAL RESULT SCORE:" + result[1])
-  best_blocks = result[0]
-  unkeyed_blocks = []
-  for (i in best_blocks){
-    unkeyed_blocks.push(graph.unkeyify(best_blocks[i]))
-  }
-  console.log("UNKEYED")
-  console.log(best_blocks)
+
+  var best_blocks = result[0];
+
+  console.log("UNKEYED:", JSON.stringify(best_blocks));
+
   res.json(best_blocks);
 });
 
@@ -86,7 +95,7 @@ app.post('/compute_value', middleware, function(req, res){
 
   var t = new Date().getTime();
   var result = Analyst.compute_value(JSON.parse(req.param('board')), JSON.parse(req.param('solution')));
-  console.log("ms elapsed: " , new Date().getTime() - t)
+  // console.log("ms elapsed: " , new Date().getTime() - t)
 
   res.json(result);
 
