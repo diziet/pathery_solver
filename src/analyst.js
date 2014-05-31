@@ -1162,7 +1162,20 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
         }
       }
 
-      if (connected_to_something == false){
+      //
+      // See Map 4784 for the reason we can only do this if depth is 1. The optimal solution is:
+      //
+      //     [[0,7],[1,4],[1,5],[2,8],[3,16],[3,4],[3,6],[4,15],[5,14],[5,5],[5,6],[6,10],[6,7],[7,8],[7,9]]
+      //
+      // however, removing `[1,4]` and `[1,5]` will result in a non-optimal solution, as the block `[1,5]` is in the
+      // path, but not connected, and the block `[1,4]` is connected, but not in the path.
+      //
+      // ### Alternatives
+      //
+      // *   Check that the block is connected within the specified depth (likely take too long).
+      // *   Search on all paths giving the current score. Numerous problems, including that it is possibly invalid.
+      //
+      if (!connected_to_something && depth === 1){
         continue
       }
 
