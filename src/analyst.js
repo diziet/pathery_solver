@@ -675,7 +675,7 @@ function removeBlock(graph, currBlocks, weightFunction) {
     var blockScore = path.value;
 
     // XXX: Removing a block _can_ actually result in a blocked path due to an oddity with teleports.
-    if(blockScore) {
+    if(!isNaN(blockScore)) {
       table.push({ id: blockKey, weight: weightFunction(blockScore) });
     }
 
@@ -702,7 +702,7 @@ function removeBlock(graph, currBlocks, weightFunction) {
    * @returns {Number}
    */
   function defaultWeightFunction(blockScore) {
-    return Math.round(Math.pow(blockScore / 10, 4));
+    return Math.ceil(Math.pow((blockScore || 1) / 10, 4));
   }
 }
 exports.removeBlock = removeBlock;
