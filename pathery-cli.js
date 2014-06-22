@@ -23,6 +23,7 @@ var configuration = {
   optimalScore: null,
   stopMonitoringServer: true,
   printResults: true,
+  softRestartAfter: null,
   workerCount: 1,
   startAt: null,
   retryOnNotFoundDelay: null,
@@ -47,6 +48,7 @@ var getopt = new Getopt([
     ['', 'optimal-score=INT', 'The optimal score for the map (optional). If set, execution will be terminated once this score is reached.'],
     ['', 'no-stop-monitoring-server', 'Do not stop the monitoring HTTP server when the optimal score is reached (primarily useful for debugging/developing the server output).'],
     ['', 'no-print-results', 'Do not print top results.'],
+    ['', 'soft-restart-after=INT', 'Restart the workers (_not_ the main server) every X minutes (optional; 11 seems to be a good value for this).'],
     ['', 'workers=INT', 'The number of workers to use (default: 1).'],
     // Retry and timing options.
     ['', 'start-at=DATE', 'Wait until the specified date/time to start running, e.g. "2014-03-01 23:59:30", (optional).'],
@@ -138,6 +140,22 @@ if(options.hasOwnProperty('no-stop-monitoring-server')) {
 
 if(options.hasOwnProperty('no-print-results')) {
   configuration.printResults = !options['no-print-results'];
+}
+
+if(options.hasOwnProperty('soft-restart-after')) {
+  var rawSoftRestartAfter = options['soft-restart-after'];
+
+  if(rawSoftRestartAfter) {
+    configuration.softRestartAfter = parseInt(rawSoftRestartAfter);
+
+    if (!configuration.softRestartAfter) {
+      console.error('--soft-restart-after requires an integral argument.');
+
+      process.exit(2);
+    }
+  } else {
+    configuration.softRestartAfter = null;
+  }
 }
 
 if(options.hasOwnProperty('workers')) {
@@ -458,20 +476,17 @@ function executeMapByDateAndDifficultyCommand(client, configuration, commandPara
  * @param {Object} configuration
  */
 function solveMap(client, map, configuration) {
+  var softRestartTimer = null;
   var topResultTracker = new TopResultTracker(client, map, configuration);
 
-  for(var i = 0; i < configuration.workerCount; i++) {
-    var initialBlocks = {};
-
-    for(var j = 0; j < map.walls; j++) {
-      Analyst.randomlyPlaceBlock(map.graph(), initialBlocks);
-    }
-
-    MultiprocessingCoordinator.startWorker(map, map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
-  }
+  initializeAndRestartWorkers();
 
   process.on('SIGINT', function () {
     console.log('SIGINT received...exiting.');
+
+    if(softRestartTimer) {
+      clearTimeout(softRestartTimer);
+    }
 
     MultiprocessingCoordinator.stopWorkers();
 
@@ -510,6 +525,31 @@ function solveMap(client, map, configuration) {
     }
   }
 
+  /**
+   * Start the workers, first stopping them if they were already running.
+   */
+  function initializeAndRestartWorkers() {
+    MultiprocessingCoordinator.stopWorkers();
+
+    for(var i = 0; i < configuration.workerCount; i++) {
+      var initialBlocks = {};
+
+      for(var j = 0; j < map.walls; j++) {
+        Analyst.randomlyPlaceBlock(map.graph(), initialBlocks);
+      }
+
+      MultiprocessingCoordinator.startWorker(map, map.graph().listify_blocks(initialBlocks), {}, onNewChildResult);
+    }
+
+    if(configuration.softRestartAfter) {
+      softRestartTimer = setTimeout(initializeAndRestartWorkers, configuration.softRestartAfter * 60 * 1000);
+    }
+  }
+
+  /**
+   *
+   * @param {{score: Number, solution: Number[][]}} childTopResult
+   */
   function onNewChildResult(childTopResult) {
     topResultTracker.registerResult(childTopResult);
 

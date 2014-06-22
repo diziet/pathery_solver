@@ -2,6 +2,7 @@
   "hostname": "www.pathery.com",
   "port": 80,
   "workerCount": 1,
+  "softRestartAfter": null,
   "auth": null,
   "userId": null
 }
