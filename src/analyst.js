@@ -704,6 +704,13 @@ function removeBlock(graph, currBlocks, weightFunction) {
    * @returns {Number}
    */
   function defaultWeightFunction(blockScore) {
+    //
+    // REVIEW: This weight function does not appear to make any sense, however, it works well. Alternatives which seem
+    // to make more sense but do not work as well:
+    //
+    //     Math.abs(Math.pow(blockScore || 1, -0.5));
+    //     1 / Math.abs(blockScore || 1);
+    //
     return Math.ceil(Math.pow((blockScore || 1) / 10, 4));
   }
 }
