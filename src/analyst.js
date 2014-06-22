@@ -87,6 +87,8 @@ function PatheryGraph(board) {
   this.red_starts = this.boardstuff[RED_START]; // list of keyified alt-starts
   this.has_reverse = (this.red_starts !== undefined);
 
+  this.has_two_paths = this.has_regular && this.has_reverse;
+
   this.checkpoints = []; // list of lists of intermediate targets, including starts and ends, all keyified
 
   var checkpoint_types = [CHECKPOINT_1, CHECKPOINT_2, CHECKPOINT_3, CHECKPOINT_4, CHECKPOINT_5];
@@ -369,7 +371,7 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
   // XXX: If there are teleports, disable the previous solution based shortcuts.
   // TODO: Making shortcuts work with teleports would likely be worth a 10% - 20% performance increase. Would require
   //     tracking the individual paths found by find_path, rather than the entire final path.
-  if(graph.has_teleports) {
+  if(graph.has_teleports || graph.has_two_paths) {
     previous_solution = false;
   }
 
@@ -777,7 +779,17 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
   case 'Oliver02':
     placeBlock = function (graph, currBlocks) {
       var pathSansBlock = find_pathery_path(graph, currBlocks);
-      var relevantBlocks = pathSansBlock.paths[0];
+      var relevantBlocks;
+
+      if(graph.has_two_paths) {
+        if(Math.random() < 0.5) {
+          relevantBlocks = pathSansBlock.paths[0];
+        } else {
+          relevantBlocks = pathSansBlock.paths[1];
+        }
+      } else {
+        relevantBlocks = pathSansBlock.paths[0];
+      }
 
       for(var i = 0; i < 1000; i++) {
         var newBlockKey = relevantBlocks[Math.floor((relevantBlocks.length - 2) * ExploratoryUtilities.random()) + 1];
@@ -787,7 +799,7 @@ switch(ExploratoryUtilities.configuration.placeBlockVersion) {
 
           var updatedPath = find_pathery_path(graph, currBlocks);
 
-          if(!updatedPath.paths[0]) {
+          if(!updatedPath.value) {
             delete currBlocks[newBlockKey];
           } else {
             return {
