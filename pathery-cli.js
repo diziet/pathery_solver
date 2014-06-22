@@ -533,8 +533,15 @@ function solveMap(client, map, configuration) {
 
     for(var i = 0; i < configuration.workerCount; i++) {
       var initialBlocks = {};
+      var wallsToPlace;
 
-      for(var j = 0; j < map.walls; j++) {
+      if(map.walls === 999) {
+        wallsToPlace = Math.floor(35 + Math.random() * 11);
+      } else {
+        wallsToPlace = map.walls;
+      }
+
+      for(var j = 0; j < wallsToPlace; j++) {
         Analyst.randomlyPlaceBlock(map.graph(), initialBlocks);
       }
 
