@@ -1,7 +1,8 @@
 /** @module pathery/communication/api */
 
 var fs = require('fs');
-var http = require('http');
+// var http = require('http');
+var { http, https } = require('follow-redirects');
 var QueryString = require('querystring');
 
 var Q = require('q');
@@ -10,7 +11,7 @@ var _ = require('underscore');
 
 var Map = require(__dirname + '/../map.js');
 
-const PROTOCOL = 'http';
+const PROTOCOL = 'https';
 
 /**
  *
@@ -94,7 +95,7 @@ module.exports.Client = function (attributes) {
   this.userId = attributes['userId'];
 };
 
-module.exports.Client.DEFAULT_HOSTNAME = 'www.pathery.com';
+module.exports.Client.DEFAULT_HOSTNAME = 'https://www.pathery.com';
 module.exports.Client.DEFAULT_MAPS_CACHE = fs.realpathSync(__dirname + '/../..') + '/data/maps';
 module.exports.Client.DEFAULT_PORT = 80;
 

@@ -7,7 +7,7 @@ var FS = require('fs');
 var http = require('http');
 
 var HamlJS = require('hamljs');
-var Sass = require('node-sass');
+// var Sass = require('node-sass');
 var strftime = require('strftime');
 
 var WorkerJournal = require('./server/worker-journal.js');
