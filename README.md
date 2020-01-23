@@ -3,59 +3,36 @@
 <!--
 ## TABLE OF CONTENTS ##
 * [OVERVIEW]
-* [FEATURES]
-* [INSTRUCTIONS]
 * [KNOWN ISSUES]
 * [FUTURE WORK]
 -->
 
 ## OVERVIEW ##
 
-This project is an extension to the Pathery website (www.pathery.com).  It does two main things:
-
-1. Based off of https://github.com/WuTheFWasThat/midnighttherapy
-2. Extend the client (browser) to do things like show block values and save/load of solutions.
-3. Lets the website interact with a personal server (running a solver), to facilitate human-computer interaction.
+This project is a solver for the Pathery website (www.pathery.com). It is partially based on Jeff Wu's work at https://github.com/WuTheFWasThat/midnighttherapy
 
 
-### HOTKEY ###
+See how to run at:
+https://github.com/diziet/pathery_solver/blob/master/pathery-cli.js#L66
+
+Configure by cloning https://github.com/diziet/pathery_solver/blob/master/config/cli.example.json#L6 locally
 
 
-| Hotkey        | Action                           |
-| ------------- |:-------------------------------- |
-| F             | Solve (hold shift to animate)      |
+Run via:
+```
+node pathery-cli map-by-id --post-results 7600
+
+```
+
+## KNOWN ISSUES ##
+
+Doesn't work with newer pathery format. We need to re-do the map parsing code in `parseBoard` as here: https://github.com/WuTheFWasThat/midnighttherapy/commit/30e771b8a7759afc486809b8161410b5c803ac67 in https://github.com/diziet/pathery_solver/blob/master/src/map.js#L122
+
+## FUTURE WORK ##
+
+Make it work.
 
 
-### RUNNING THE SERVER ###
+CREDIT:
 
-First you'll need a server running.  
-
-1. Clone this repo and cd into it (<a href="http://git-scm.com/book/en/Getting-Started-Installing-Git">How to install git</a>)
-2. Install Node (<a href="http://howtonode.org/how-to-install-nodejs">How to</a>)
-3. `npm install express`
-4. Run locally: (or just `npm start`, if you have npm)
-
-Next, add the client to the browser window.
-
-1. Go to Pathery
-2. Paste
-
-`$.getScript('https://raw.github.com/WuTheFWasThat/midnighttherapy/master/pathery-client.js')`
-
-into the Javascript console.
-
-
-### TUNING ###
-Edit MAX_DEPTH in pathery_server.js to change how many blocks the solver places.  Right now on a 2013 Macbook Pro it can do ~8 block in simple ~10s.
-
-## FUTURE WORK: ##
-
-- Partial-Path caching
-
-- Better hashing algorthm for positions.  Right now the hash key is the array of block placed sorted then toString()ed.
-
-Like {"[0,1]": 1, "[0,1],[0,2]": 1...}
-
-CREDIT:  
-
-Big thanks to BlueRaja, HRoll, Joy, skishore, wuthefwasthat for making this possible.
+Big thanks to BlueRaja, HRoll, Joy, skishore, wuthefwasthat, Mike Narayan, Oliver Yeh for making this possible.
