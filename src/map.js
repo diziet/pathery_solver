@@ -119,34 +119,63 @@ Map.prototype.virginalScore = function () {
  * @param {Number} width
  * @returns {String[][]}
  */
-function parseBoard(code, height, width) {
-  // XXX: Could sanity check e.g. height, width, wallsRemaining, etc here using the logic in Therapist.parse_board.
+function parseBoard(code) {
+  var head = code.split(':')[0];
+  var body = code.split(':')[1];
 
+  var head = head.split('.');
+  //var dims = head[0].split('x');
+  var width = parseInt(head[0]);
+  var height = parseInt(head[1]);
+
+//  if (head[1][0] != 'c') {console.log('head[1][0] was ' + head[1][0] + ' expected c');}
+//  var targets = parseInt(head[1].slice(1));
+
+//  if (head[2][0] != 'r') {console.log('head[2][0] was ' + head[2][0] + ' expected r');}
+
+//  if (head[3][0] != 'w') {console.log('head[3][0] was ' + head[3][0] + ' expected w');}
+  var walls_remaining = parseInt(head[2]);
+
+//  if (head[4][0] != 't') {console.log('head[4][0] was ' + head[4][0] + ' expected t');}
+//  var teleports = parseInt(head[4].slice(1))
+
+  var data = new Array();
   var i, j;
-  var board = [];
-
   for (i = 0; i < height; i++) {
-    var row = board[i] = [];
-
-    for (j = 0; j < width; j++) {
-      row[j] = ' ';
-    }
+      var row = new Array();
+      for (j = 0; j < width; j++) {
+          row[j] = ' ';
+      }
+      data[i] = row;
   }
 
-  i = -1;
-  j = width - 1;
+  var i = -1;
+  var j = width - 1;
+  var body_split = body.split('.').slice(0, -1);
 
-  code.split(':')[1].split('.').slice(0, -1).forEach(function (item) {
-    for (var k = 0; k < parseInt(item.slice(0, -1)) + 1; k++) {
-      j += 1;
-      if (j >= width) {
-        j = 0;
-        i += 1;
+  for (var k = 0; k < body_split.length; k++) {
+      var item = body_split[k].split(',');
+      if (item[0] == "") { item[0] = "0" }
+      for (var l = 0; l < parseInt(item[0]) + 1; l++) {
+          j += 1;
+          if (j >= width) {
+              j = 0;
+              i += 1;
+          }
       }
-    }
+      var type = item[1];
+      data[i][j] = type;
+      console.log(data);
+  }
 
-    board[i][j] = item[item.length - 1];
-  });
+  var board = [];
+  for (var i in data) {
+   board.push(data[i].join(''));
+  }
+  return board
 
-  return board;
+  // return {
+  //   board: data,
+  //   walls_remaining: walls_remaining,
+  // };
 }
