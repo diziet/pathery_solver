@@ -8,42 +8,65 @@
 
 var ExploratoryUtilities = require(__dirname + '/exploratory-utilities.js');
 
-ROCK_1             = 'r';
-ROCK_2             = 'R';  // never used?
-ROCK_3             = 'q';  // used in seeing double, same as rock?
+var ROCK_1             = 'r1';
+var ROCK_2             = 'r2';  // never used?
+var ROCK_3             = 'r3';  // used in seeing double, same as rock?
 
-PATCH              = 'p';  // can't place blocks, but path can pass
+var PATCH              = 'p1';  // can't place blocks, but path can pass
 
-GREEN_THROUGH_ONLY = 'X';  // colored green, blocks red
-RED_THROUGH_ONLY   = 'x';  // colored red, blocks green
+var GREEN_THROUGH_ONLY = 'x2';  // colored green, blocks red
+var RED_THROUGH_ONLY   = 'x1';  // colored red, blocks green
 
-GREEN_START        = 's';
-RED_START          = 'S';
+var GREEN_START        = 's1';
+var RED_START          = 's2';
 
-FINISH             = 'f';
+var FINISH             = 'f1';
 
-CHECKPOINT_1       = 'a';
-CHECKPOINT_2       = 'b';
-CHECKPOINT_3       = 'c';
-CHECKPOINT_4       = 'd';
-CHECKPOINT_5       = 'e';
-CHECKPOINTS        = [CHECKPOINT_1, CHECKPOINT_2, CHECKPOINT_3, CHECKPOINT_4, CHECKPOINT_5];
+// Checkpoints are c+number, and can be unlimited now.
 
+// Takes in the 1-indexed checkpoint number and returns the checkpoint name.
+// Example: 3 -> 'c3'
+function getCheckpointName(n) {
+  return 'c'+n;
+}
+
+// Arbitrary max num of checkpoints.
+MAX_CHECKPOINT_NUM = 100000
+
+// The CHECKPOINT variables are saved for now for the map_maker files.
+var CHECKPOINT_1       = 'c1';
+var CHECKPOINT_2       = 'c2';
+var CHECKPOINT_3       = 'c3';
+var CHECKPOINT_4       = 'c4';
+var CHECKPOINT_5       = 'c5';
+var CHECKPOINTS        = [CHECKPOINT_1, CHECKPOINT_2, CHECKPOINT_3, CHECKPOINT_4, CHECKPOINT_5];
+
+
+// Teleports are t+number and u+number for in and out, and can be unlimited now.
+
+var TELE_IN_PATTERN = /^t[0-9]+$/
+var TELE_OUT_PATTERN = /^u[0-9]+$/
+
+// The TELE_IN, TELE_OUT variables are saved for now for the map_maker files.
 // dark blue
-TELE_IN_1          = 't';
-TELE_OUT_1         = 'u';
+var TELE_IN_1          = 't1';
+var TELE_OUT_1         = 'u1';
 // green
-TELE_IN_2          = 'm';
-TELE_OUT_2         = 'n';
+var TELE_IN_2          = 't2';
+var TELE_OUT_2         = 'u2';
 // red
-TELE_IN_3          = 'g';
-TELE_OUT_3         = 'h';
+var TELE_IN_3          = 't3';
+var TELE_OUT_3         = 'u3';
 // light blue
-TELE_IN_4          = 'i';
-TELE_OUT_4         = 'j';
+var TELE_IN_4          = 't4';
+var TELE_OUT_4         = 'u4';
 // light green
-TELE_IN_5          = 'k';
-TELE_OUT_5         = 'l';
+var TELE_IN_5          = 't5';
+var TELE_OUT_5         = 'u5';
+
+var NOTURN             = 'z5';
+
+var PATH_BLOCKED_CONSTANT = NaN; // TODO: use this
 
 teleports_map = {};
 teleports_map[TELE_IN_1] = TELE_OUT_1;
@@ -358,7 +381,7 @@ PatheryGraph.prototype.find_path = function(
   }
   return null;
 }
-// previous solution is an array of keyified blocks 
+// previous solution is an array of keyified blocks
 // ie.  [1,55,330] which represents the previous solution for path caching
 
 function find_full_path(graph, blocks, reversed, previous_solution, last_block_placed, relevant_blocks){
@@ -404,8 +427,8 @@ function find_full_path(graph, blocks, reversed, previous_solution, last_block_p
     }
 
 
-    // Traverse through the previous solution.  If the previous solution 
-    // never hits the block just placed, then don't recalculate the BFS 
+    // Traverse through the previous solution.  If the previous solution
+    // never hits the block just placed, then don't recalculate the BFS
     // and just use the previous version
 
     if (previous_solution){
@@ -933,7 +956,7 @@ function place_greedy2(board, currBlocks, depth, total, previous_solution, previ
     var graph = new PatheryGraph(board);
   } else{
     graph.used_teleports = {};
-  } 
+  }
   if (already_tried_combination == undefined){
     already_tried_combination = {}
   }
@@ -1000,7 +1023,7 @@ function place_greedy2(board, currBlocks, depth, total, previous_solution, previ
       // console.log("LISTIFY")
       // console.log(listified)
       topScoreHitCount = 1;
-      
+
        // currBlocks[block1] = true
        // currBlocks[block2] = true
         //currBlocks[block3] = true
@@ -1012,7 +1035,7 @@ function place_greedy2(board, currBlocks, depth, total, previous_solution, previ
         console.log(currBlocks)
          console.log('new top score', topScore, iterations, currBlocks);
        console.log('with ' + Object.keys(currBlocks).length + ' keys')
-     
+
       }
     }
 
@@ -1065,7 +1088,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
     var graph = new PatheryGraph(board);
   } else{
     graph.used_teleports = {};
-  } 
+  }
   if (already_tried_combination == undefined){
     already_tried_combination = {}
   }
@@ -1107,7 +1130,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
 
   var possible_next_moves;
 
-  // Unable to find solution, so push last block to blocked list  
+  // Unable to find solution, so push last block to blocked list
   if (solution.paths[0] == null){
     blocked_list.push(previous_block);
     possible_next_moves = [];
@@ -1170,7 +1193,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
 
           // check for direction
           //  Don't need to put a block at X
-          //  b b b 
+          //  b b b
           //    x b
           //    x b
           if (current_blocks[graph.keyify_coordinates(temp_x, temp_y)]){
@@ -1198,7 +1221,7 @@ function place_greedy(board, cur_blocks, depth, total, previous_solution, previo
         continue
       }
 
-      // check the 4 possible ordinal directions.  Don't check if theres 
+      // check the 4 possible ordinal directions.  Don't check if theres
       // already a block north/east, north/west, west/south, or east/south
       if (connected_to_something && has_blocks_dirs.length > 1) {
 

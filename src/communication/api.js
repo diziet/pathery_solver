@@ -95,7 +95,7 @@ module.exports.Client = function (attributes) {
   this.userId = attributes['userId'];
 };
 
-module.exports.Client.DEFAULT_HOSTNAME = 'https://www.pathery.com';
+module.exports.Client.DEFAULT_HOSTNAME = 'www.pathery.com';
 module.exports.Client.DEFAULT_MAPS_CACHE = fs.realpathSync(__dirname + '/../..') + '/data/maps';
 module.exports.Client.DEFAULT_PORT = 80;
 

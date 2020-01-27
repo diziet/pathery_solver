@@ -170,7 +170,7 @@ function parseBoard(code) {
 
   var board = [];
   for (var i in data) {
-   board.push(data[i].join(''));
+   board.push(data[i]);
   }
   return board
 
